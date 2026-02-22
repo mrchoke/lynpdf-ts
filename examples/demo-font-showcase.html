@@ -1,0 +1,105 @@
+<!-- ============================================================
+     Example: Font Showcase — TTF, OTF, Variable
+     ============================================================ -->
+<html>
+<head>
+  <title>LynPDF Font Showcase</title>
+  <meta name="author" content="LynPDF">
+  <meta name="description" content="Showcase of TTF, OTF, and Variable font support">
+  <meta name="keywords" content="fonts, ttf, otf, variable, kerning, ligature">
+  <style>
+    body { font-family: 'Sarabun'; font-size: 14px; color: #333; }
+    h1 { font-size: 28px; color: #1a237e; margin-bottom: 20px; text-align: center; }
+    h2 { font-size: 20px; color: #283593; margin-bottom: 12px; border-bottom: 2px solid #c5cae9; padding-bottom: 6px; }
+    .section { margin-bottom: 24px; padding: 16px; background-color: #fafafa; border: 1px solid #e0e0e0; }
+    .font-sample { margin-bottom: 8px; }
+    .label { font-size: 10px; color: #999; margin-bottom: 2px; }
+    .compare-row { display: flex; flex-direction: row; margin-bottom: 12px; }
+    .compare-cell { flex: 1; padding: 12px; border: 1px solid #ddd; margin-right: 8px; }
+    .compare-cell:last-child { margin-right: 0; }
+  </style>
+</head>
+<body>
+
+<h1>LynPDF Font Showcase</h1>
+<div style="text-align: center; margin-bottom: 24px; color: #666; font-size: 12px;">
+  TTF (Sarabun, Inter) · OTF (IBM Plex Sans) · Variable (Inter Variable)
+</div>
+
+<!-- ── Section 1: Thai Fonts ── -->
+<h2>Thai Fonts (TTF)</h2>
+<div class="section">
+  <div class="label">Sarabun Regular 18px:</div>
+  <div class="font-sample" style="font-family: 'Sarabun'; font-size: 18px;">สวัสดีครับ ทดสอบฟอนต์ Sarabun — ภาษาไทยก็ใช้ได้</div>
+  <div class="label">Kanit Bold 18px:</div>
+  <div class="font-sample" style="font-family: 'Kanit'; font-weight: bold; font-size: 18px;">สวัสดีครับ ทดสอบฟอนต์ Kanit Bold — ภาษาไทย</div>
+  <div class="label">Prompt Italic 18px:</div>
+  <div class="font-sample" style="font-family: 'Prompt'; font-style: italic; font-size: 18px;">สวัสดีครับ ทดสอบฟอนต์ Prompt Italic — ภาษาไทย</div>
+</div>
+
+<!-- ── Section 2: Inter TTF ── -->
+<h2>Inter (TTF — Kerning &amp; Ligatures)</h2>
+<div class="section">
+  <div class="label">Inter Regular 18px:</div>
+  <div class="font-sample" style="font-family: 'Inter'; font-size: 18px;">The quick brown fox jumps over the lazy dog. office efficient difficult</div>
+  <div class="label">Inter Bold 18px:</div>
+  <div class="font-sample" style="font-family: 'Inter'; font-weight: bold; font-size: 18px;">Bold: AV AW To Te — office efficient traffic</div>
+  <div class="label">Inter Italic 18px:</div>
+  <div class="font-sample" style="font-family: 'Inter'; font-style: italic; font-size: 18px;">Italic: fi fl ff ffi ffl — fifty final flame float</div>
+  <div class="label">Kerning pairs (36px):</div>
+  <div class="font-sample" style="font-family: 'Inter'; font-size: 36px; color: #1a237e;">AV AW AY AT To Te Ty We</div>
+</div>
+
+<!-- ── Section 3: IBM Plex Sans OTF ── -->
+<h2>IBM Plex Sans (OTF)</h2>
+<div class="section">
+  <div class="label">IBM Plex Sans Regular 18px:</div>
+  <div class="font-sample" style="font-family: 'IBM Plex Sans'; font-size: 18px;">The quick brown fox jumps over the lazy dog. office efficient difficult</div>
+  <div class="label">IBM Plex Sans Bold 18px:</div>
+  <div class="font-sample" style="font-family: 'IBM Plex Sans'; font-weight: bold; font-size: 18px;">Bold: AV AW To Te — office efficient traffic</div>
+  <div class="label">IBM Plex Sans Italic 18px:</div>
+  <div class="font-sample" style="font-family: 'IBM Plex Sans'; font-style: italic; font-size: 18px;">Italic: fi fl ff ffi ffl — fifty final flame float</div>
+  <div class="label">Kerning pairs (36px):</div>
+  <div class="font-sample" style="font-family: 'IBM Plex Sans'; font-size: 36px; color: #1b5e20;">AV AW AY AT To Te Ty We</div>
+</div>
+
+<!-- ── Section 4: Inter Variable ── -->
+<h2>Inter Variable (Single File, Multiple Weights)</h2>
+<div class="section">
+  <div class="label">Inter Variable Regular 18px:</div>
+  <div class="font-sample" style="font-family: 'Inter Variable'; font-size: 18px;">The quick brown fox jumps over the lazy dog. office efficient difficult</div>
+  <div class="label">Inter Variable Bold 18px:</div>
+  <div class="font-sample" style="font-family: 'Inter Variable'; font-weight: bold; font-size: 18px;">Bold: AV AW To Te — office efficient traffic</div>
+  <div class="label">Inter Variable Italic 18px:</div>
+  <div class="font-sample" style="font-family: 'Inter Variable'; font-style: italic; font-size: 18px;">Italic: fi fl ff ffi ffl — fifty final flame float</div>
+  <div class="label">Kerning pairs (36px):</div>
+  <div class="font-sample" style="font-family: 'Inter Variable'; font-size: 36px; color: #4a148c;">AV AW AY AT To Te Ty We</div>
+</div>
+
+<!-- ── Section 5: Side-by-side ── -->
+<h2>Side-by-Side Comparison</h2>
+<div class="compare-row">
+  <div class="compare-cell">
+    <div class="label" style="color: #1565c0; font-weight: bold;">Sarabun (TTF)</div>
+    <div style="font-family: 'Sarabun'; font-size: 16px;">office fi fl ff AV To</div>
+    <div style="font-family: 'Sarabun'; font-size: 16px;">สวัสดีครับ ภาษาไทย</div>
+  </div>
+  <div class="compare-cell">
+    <div class="label" style="color: #2e7d32; font-weight: bold;">Inter (TTF)</div>
+    <div style="font-family: 'Inter'; font-size: 16px;">office fi fl ff AV To</div>
+    <div style="font-family: 'Inter'; font-size: 16px;">Typography quality</div>
+  </div>
+  <div class="compare-cell">
+    <div class="label" style="color: #e65100; font-weight: bold;">IBM Plex (OTF)</div>
+    <div style="font-family: 'IBM Plex Sans'; font-size: 16px;">office fi fl ff AV To</div>
+    <div style="font-family: 'IBM Plex Sans'; font-size: 16px;">Typography quality</div>
+  </div>
+</div>
+
+<!-- ── Footer ── -->
+<div style="text-align: center; margin-top: 30px; padding-top: 16px; border-top: 1px solid #e0e0e0; color: #999; font-size: 10px;">
+  Generated by LynPDF — Metadata: Title, Author, Keywords embedded from HTML &lt;meta&gt; tags
+</div>
+
+</body>
+</html>

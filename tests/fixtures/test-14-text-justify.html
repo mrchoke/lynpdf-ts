@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <title>Test 14 – text-align: justify</title>
+  <style>
+    body {
+      font-family: 'Sarabun', sans-serif;
+      font-size: 14px;
+      color: #333;
+      margin: 0;
+      padding: 50px;
+    }
+    h1 {
+      font-size: 22px;
+      color: #1a237e;
+      margin-bottom: 10px;
+    }
+    h2 {
+      font-size: 17px;
+      color: #283593;
+      margin-top: 25px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid #c5cae9;
+      padding-bottom: 4px;
+    }
+    .box {
+      border: 1px solid #ccc;
+      padding: 15px;
+      margin-bottom: 15px;
+      background-color: #fafafa;
+    }
+    .justify {
+      text-align: justify;
+    }
+    .left {
+      text-align: left;
+    }
+    .center {
+      text-align: center;
+    }
+    .right {
+      text-align: right;
+    }
+    .label {
+      font-size: 11px;
+      color: #777;
+      margin-bottom: 4px;
+    }
+    .two-col {
+      display: flex;
+      flex-direction: row;
+    }
+    .col {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid #ddd;
+      margin: 5px;
+    }
+  </style>
+</head>
+<body>
+
+<h1>ทดสอบ text-align: justify</h1>
+
+<!-- Section 1: Thai text justify -->
+<h2>1. ข้อความภาษาไทย (Justify vs Left)</h2>
+
+<div class="label">text-align: justify</div>
+<div class="box justify">
+  ประเทศไทยเป็นประเทศที่มีความหลากหลายทางวัฒนธรรมและธรรมชาติ ตั้งแต่ภูเขาสูงทางภาคเหนือ
+  ไปจนถึงชายหาดที่สวยงามทางภาคใต้ อาหารไทยเป็นที่รู้จักไปทั่วโลกด้วยรสชาติที่เป็นเอกลักษณ์
+  ผสมผสานระหว่างรสเปรี้ยว หวาน เค็ม และเผ็ด วัฒนธรรมไทยมีความลึกซึ้งและงดงาม
+  สะท้อนผ่านศิลปะ สถาปัตยกรรม และประเพณีที่สืบทอดมายาวนาน
+</div>
+
+<div class="label">text-align: left (สำหรับเปรียบเทียบ)</div>
+<div class="box left">
+  ประเทศไทยเป็นประเทศที่มีความหลากหลายทางวัฒนธรรมและธรรมชาติ ตั้งแต่ภูเขาสูงทางภาคเหนือ
+  ไปจนถึงชายหาดที่สวยงามทางภาคใต้ อาหารไทยเป็นที่รู้จักไปทั่วโลกด้วยรสชาติที่เป็นเอกลักษณ์
+  ผสมผสานระหว่างรสเปรี้ยว หวาน เค็ม และเผ็ด วัฒนธรรมไทยมีความลึกซึ้งและงดงาม
+  สะท้อนผ่านศิลปะ สถาปัตยกรรม และประเพณีที่สืบทอดมายาวนาน
+</div>
+
+<!-- Section 2: English text justify -->
+<h2>2. English Text (Justify vs Left)</h2>
+
+<div class="label">text-align: justify</div>
+<div class="box justify">
+  Typography is the art and technique of arranging type to make written language legible,
+  readable, and appealing when displayed. The arrangement of type involves selecting typefaces,
+  point sizes, line lengths, line-spacing, and letter-spacing, as well as adjusting the space
+  between pairs of letters. Text justification is one of the most important aspects of
+  professional document layout, ensuring that both the left and right edges of the text
+  block are aligned evenly with the margins.
+</div>
+
+<div class="label">text-align: left (for comparison)</div>
+<div class="box left">
+  Typography is the art and technique of arranging type to make written language legible,
+  readable, and appealing when displayed. The arrangement of type involves selecting typefaces,
+  point sizes, line lengths, line-spacing, and letter-spacing, as well as adjusting the space
+  between pairs of letters. Text justification is one of the most important aspects of
+  professional document layout, ensuring that both the left and right edges of the text
+  block are aligned evenly with the margins.
+</div>
+
+<!-- Section 3: Side-by-side comparison -->
+<h2>3. เปรียบเทียบทั้ง 4 แบบ (All 4 alignments)</h2>
+
+<div class="two-col">
+  <div class="col justify">
+    <div class="label">justify</div>
+    LynPDF เป็นเครื่องมือสร้างเอกสาร PDF จาก HTML และ CSS รองรับภาษาไทยอย่างสมบูรณ์ ใช้ Yoga Layout สำหรับจัดวาง Flexbox และ PDFKit สำหรับเรนเดอร์
+  </div>
+  <div class="col left">
+    <div class="label">left</div>
+    LynPDF เป็นเครื่องมือสร้างเอกสาร PDF จาก HTML และ CSS รองรับภาษาไทยอย่างสมบูรณ์ ใช้ Yoga Layout สำหรับจัดวาง Flexbox และ PDFKit สำหรับเรนเดอร์
+  </div>
+</div>
+
+<div class="two-col">
+  <div class="col center">
+    <div class="label">center</div>
+    LynPDF เป็นเครื่องมือสร้างเอกสาร PDF จาก HTML และ CSS รองรับภาษาไทยอย่างสมบูรณ์ ใช้ Yoga Layout สำหรับจัดวาง Flexbox และ PDFKit สำหรับเรนเดอร์
+  </div>
+  <div class="col right">
+    <div class="label">right</div>
+    LynPDF เป็นเครื่องมือสร้างเอกสาร PDF จาก HTML และ CSS รองรับภาษาไทยอย่างสมบูรณ์ ใช้ Yoga Layout สำหรับจัดวาง Flexbox และ PDFKit สำหรับเรนเดอร์
+  </div>
+</div>
+
+<!-- Section 4: Mixed Thai-English -->
+<h2>4. ข้อความผสมไทย-อังกฤษ (Justify)</h2>
+
+<div class="box justify">
+  การพัฒนา software ในยุคปัจจุบันต้องอาศัย tools และ frameworks ที่หลากหลาย
+  เช่น TypeScript สำหรับ type safety, React สำหรับ UI components,
+  และ Node.js สำหรับ backend services ทั้งหมดนี้ทำงานร่วมกัน
+  เพื่อสร้าง application ที่มีประสิทธิภาพและเชื่อถือได้
+  โดย LynPDF ใช้ Yoga Layout engine และ PDFKit renderer
+  ในการสร้างเอกสาร PDF คุณภาพสูงจาก HTML/CSS ได้อย่างมีประสิทธิภาพ
+</div>
+
+</body>
+</html>

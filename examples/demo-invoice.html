@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Invoice — ใบแจ้งหนี้</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        @page {
+            size: A4;
+            margin: 15mm 20mm;
+            @top-center { content: ""; }
+            @bottom-right { content: ""; }
+            @bottom-left { content: ""; }
+        }
+
+        .invoice-wrapper {
+            font-family: 'Sarabun', sans-serif;
+            color: #333;
+            line-height: 1.2;
+        }
+
+        /* Top bar */
+        .invoice-topbar {
+            background-color: #1a1a2e;
+            padding: 10px 20px;
+            display: flex;
+            flex-direction: row;
+            margin-bottom: 0;
+        }
+        .invoice-topbar-brand { flex: 1; }
+        .invoice-topbar-brand h1 {
+            color: #fff;
+            font-size: 22px;
+            margin: 0 0 2px 0;
+        }
+        .invoice-topbar-brand p {
+            color: #adb5bd;
+            font-size: 12px;
+            margin: 0;
+        }
+        .invoice-topbar-number { flex: 1; text-align: right; }
+        .invoice-topbar-number .inv-label {
+            color: #adb5bd;
+            font-size: 11px;
+        }
+        .invoice-topbar-number .inv-num {
+            color: #fff;
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .invoice-topbar-number .inv-date {
+            color: #adb5bd;
+            font-size: 12px;
+        }
+
+        /* Parties */
+        .invoice-parties {
+            display: flex;
+            flex-direction: row;
+            padding: 10px 0;
+            border-bottom: 2px solid #dee2e6;
+            margin-bottom: 12px;
+        }
+        .party-block { flex: 1; padding: 0 12px; }
+        .party-block:first-child { padding-left: 0; }
+        .party-label {
+            font-size: 10px;
+            color: #999;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 2px;
+        }
+        .party-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #1a1a2e;
+            margin-bottom: 2px;
+        }
+        .party-detail {
+            font-size: 11px;
+            color: #555;
+            line-height: 1.3;
+        }
+
+        /* Invoice table */
+        .inv-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 16px;
+        }
+        .inv-table th {
+            background-color: #1a1a2e;
+            color: #fff;
+            padding: 6px 10px;
+            font-size: 12px;
+            border: none;
+        }
+        .inv-table td {
+            padding: 6px 10px;
+            font-size: 12px;
+            border-bottom: 1px solid #dee2e6;
+        }
+        .inv-table .alt-row td { background-color: #f8f9fa; }
+        .inv-table .subtotal-row td {
+            background-color: #f8f9fa;
+            font-weight: bold;
+            border-top: 1px solid #dee2e6;
+        }
+        .inv-table .grand-total-row td {
+            background-color: #1a1a2e;
+            color: #fff;
+            font-size: 15px;
+            font-weight: bold;
+            border: none;
+        }
+
+        /* Summary block */
+        .invoice-summary {
+            display: flex;
+            flex-direction: row;
+            margin-bottom: 12px;
+        }
+        .summary-notes { flex: 2; padding-right: 16px; }
+        .summary-totals { flex: 1; }
+        .totals-table { width: 100%; }
+        .totals-table td { padding: 3px 6px; font-size: 12px; }
+        .totals-table .label-col { color: #666; }
+        .totals-table .value-col { text-align: right; font-weight: bold; }
+        .totals-table .grand-row td {
+            background-color: #1a1a2e;
+            color: #fff;
+            padding: 6px;
+            font-size: 14px;
+        }
+
+        /* Payment info */
+        .payment-info {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 8px 12px;
+            margin-bottom: 8px;
+        }
+        .payment-info h3 {
+            font-size: 14px;
+            color: #1a1a2e;
+            margin: 0 0 8px 0;
+        }
+        .payment-info p {
+            font-size: 12px;
+            color: #555;
+            margin: 2px 0;
+        }
+
+        /* Footer */
+        .invoice-footer {
+            border-top: 1px solid #dee2e6;
+            padding-top: 12px;
+            text-align: center;
+            font-size: 11px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+<div class="invoice-wrapper">
+
+    <!-- Top bar with brand + invoice number -->
+    <div class="invoice-topbar">
+        <div class="invoice-topbar-brand">
+            <h1>ACME Corporation Co., Ltd.</h1>
+            <p>บริษัท แอคมี คอร์ปอเรชั่น จำกัด</p>
+        </div>
+        <div class="invoice-topbar-number">
+            <div class="inv-label">INVOICE / ใบแจ้งหนี้</div>
+            <div class="inv-num">#INV-2568-0042</div>
+            <div class="inv-date">วันที่: 22 กุมภาพันธ์ 2568</div>
+            <div class="inv-date">ครบกำหนด: 22 มีนาคม 2568</div>
+        </div>
+    </div>
+
+    <!-- Parties: FROM / TO -->
+    <div class="invoice-parties">
+        <div class="party-block">
+            <div class="party-label">จาก (FROM)</div>
+            <div class="party-name">ACME Corporation Co., Ltd.</div>
+            <div class="party-detail">
+                123 ถนนสุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพฯ 10110<br/>
+                เลขประจำตัวผู้เสียภาษี: 0105566012345 | โทร: 02-123-4567
+            </div>
+        </div>
+        <div class="party-block">
+            <div class="party-label">ถึง (BILL TO)</div>
+            <div class="party-name">บริษัท เทค สตาร์ทอัพ จำกัด</div>
+            <div class="party-detail">
+                456 อาคาร One Bangkok ชั้น 12 ถนนพระราม 4 กรุงเทพฯ 10330<br/>
+                เลขภาษี: 0105566098765 | โครงการ: ERP ระยะที่ 2 (CTR-2568-015)
+            </div>
+        </div>
+    </div>
+
+    <!-- Line items -->
+    <table class="inv-table">
+        <thead>
+            <tr>
+                <th style="width: 40px">#</th>
+                <th>รายละเอียด</th>
+                <th style="width: 60px; text-align: center">จำนวน</th>
+                <th style="width: 80px; text-align: right">หน่วย</th>
+                <th style="width: 100px; text-align: right">ราคาต่อหน่วย</th>
+                <th style="width: 110px; text-align: right">จำนวนเงิน</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>1</td>
+                <td>บริการพัฒนาระบบ ERP — Module จัดซื้อ (160 man-hours)</td>
+                <td style="text-align: center">160</td>
+                <td style="text-align: right">ชม.</td>
+                <td style="text-align: right">800.00</td>
+                <td style="text-align: right">128,000.00</td>
+            </tr>
+            <tr class="alt-row">
+                <td>2</td>
+                <td>บริการพัฒนาระบบ ERP — Module คลังสินค้า (120 man-hours)</td>
+                <td style="text-align: center">120</td>
+                <td style="text-align: right">ชม.</td>
+                <td style="text-align: right">800.00</td>
+                <td style="text-align: right">96,000.00</td>
+            </tr>
+            <tr>
+                <td>3</td>
+                <td>UI/UX Design — Dashboard &amp; Reports (Figma, 40 man-hours)</td>
+                <td style="text-align: center">40</td>
+                <td style="text-align: right">ชม.</td>
+                <td style="text-align: right">1,200.00</td>
+                <td style="text-align: right">48,000.00</td>
+            </tr>
+            <tr class="alt-row">
+                <td>4</td>
+                <td>ค่าบริการ Server Hosting — AWS EC2 + RDS, 12 เดือน</td>
+                <td style="text-align: center">12</td>
+                <td style="text-align: right">เดือน</td>
+                <td style="text-align: right">4,500.00</td>
+                <td style="text-align: right">54,000.00</td>
+            </tr>
+            <tr>
+                <td>5</td>
+                <td>ค่าฝึกอบรมผู้ใช้งาน — 2 วัน × 20 คน</td>
+                <td style="text-align: center">2</td>
+                <td style="text-align: right">วัน</td>
+                <td style="text-align: right">15,000.00</td>
+                <td style="text-align: right">30,000.00</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Summary + notes row -->
+    <div class="invoice-summary">
+        <div class="summary-notes">
+            <div class="warning-box" style="font-size: 11px; padding: 8px 12px; margin: 0">
+                <strong>การชำระเงิน:</strong> K-Bank บัญชี 123-4-56789-0 ชื่อ บจ. แอคมี คอร์ปอเรชั่น<br/>
+                <strong>หมายเหตุ:</strong> ชำระภายใน 30 วัน — ล่าช้าคิดค่าปรับ 1.5%/เดือน
+            </div>
+        </div>
+        <div class="summary-totals">
+            <table class="totals-table">
+                <tr>
+                    <td class="label-col">ยอดรวม (Subtotal)</td>
+                    <td class="value-col">356,000.00 ฿</td>
+                </tr>
+                <tr>
+                    <td class="label-col">ส่วนลดพิเศษ 5%</td>
+                    <td class="value-col" style="color: #dc3545">-17,800.00 ฿</td>
+                </tr>
+                <tr>
+                    <td class="label-col">ยอดหลังหักส่วนลด</td>
+                    <td class="value-col">338,200.00 ฿</td>
+                </tr>
+                <tr>
+                    <td class="label-col">ภาษีมูลค่าเพิ่ม 7%</td>
+                    <td class="value-col">23,674.00 ฿</td>
+                </tr>
+                <tr>
+                    <td class="label-col">หัก ณ ที่จ่าย 3%</td>
+                    <td class="value-col" style="color: #dc3545">-10,146.00 ฿</td>
+                </tr>
+                <tr class="grand-row">
+                    <td>ยอดชำระสุทธิ</td>
+                    <td style="text-align: right">351,728.00 ฿</td>
+                </tr>
+            </table>
+        </div>
+    </div>
+
+    <!-- Signature block -->
+    <div class="row" style="margin-bottom: 4px">
+        <div class="col" style="text-align: center; padding: 2px">
+            <div style="border-top: 1px solid #333; margin: 20px 16px 2px 16px"></div>
+            <p style="font-size: 11px; margin: 0">ผู้มีอำนาจลงนาม</p>
+            <p style="font-size: 10px; color: #666; margin: 0">Authorized Signatory</p>
+        </div>
+        <div class="col" style="text-align: center; padding: 2px">
+            <div style="border-top: 1px solid #333; margin: 20px 16px 2px 16px"></div>
+            <p style="font-size: 11px; margin: 0">ผู้รับเอกสาร</p>
+            <p style="font-size: 10px; color: #666; margin: 0">Received By</p>
+        </div>
+        <div class="col" style="text-align: center; padding: 2px">
+            <div style="border-top: 1px solid #333; margin: 20px 16px 2px 16px"></div>
+            <p style="font-size: 11px; margin: 0">ผู้อนุมัติ</p>
+            <p style="font-size: 10px; color: #666; margin: 0">Approved By</p>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="invoice-footer">
+        บริษัท แอคมี คอร์ปอเรชั่น จำกัด | ทะเบียนเลขที่ 0105566012345 |
+        123 ถนนสุขุมวิท กรุงเทพฯ 10110 | www.acme.co.th
+    </div>
+
+</div>
+</body>
+</html>

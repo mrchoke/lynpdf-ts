@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Typography & Languages</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        .font-sarabun { font-family: 'Sarabun', sans-serif; }
+        .font-prompt { font-family: 'Prompt', sans-serif; }
+        .font-kanit { font-family: 'Kanit', sans-serif; }
+        .font-jp { font-family: 'Noto Sans JP', sans-serif; }
+        .font-custom { font-family: 'CustomWebFont', sans-serif; }
+    </style>
+</head>
+<body>
+    <h1>Typography & Multi-language Test</h1>
+    
+    <h2>1. Thai Text Shaping (Complex Vowels & Tones)</h2>
+    <p class="font-sarabun"><strong>Sarabun:</strong> ผู้ใหญ่หาผ้าใหม่ ให้สะใภ้ใช้คล้องคอ ใฝ่ใจเอาใส่ห่อ มิหลงใหลใครขอดู (Testing upper/lower vowels and tone marks overlapping: ญัตติ, ฐาน, ป่าไม้, น้ำตก)</p>
+    <p class="font-prompt"><strong>Prompt:</strong> สวัสดีครับ นี่คือการทดสอบฟอนต์ Prompt สำหรับการสร้าง PDF</p>
+    <p class="font-kanit"><strong>Kanit:</strong> ทดสอบฟอนต์ Kanit ตัวหนาและตัวเอียง <em>เอียง</em> <strong>หนา</strong></p>
+
+    <h2>2. Japanese Text</h2>
+    <p class="font-jp">こんにちは、世界！これはPDFレンダリングのテストです。(Hello World! This is a PDF rendering test.)</p>
+
+    <h2>3. Custom @font-face</h2>
+    <p class="font-custom">This text uses a custom font loaded via @font-face from a URL.</p>
+
+    <h2>4. Emojis</h2>
+    <p>Testing emoji rendering: 😀 🚀 🌍 📄 🎉 🇹🇭 🇯🇵</p>
+
+    <h2>5. Lists (Nested)</h2>
+    <ul>
+        <li>Item 1
+            <ul>
+                <li>Sub-item 1.1</li>
+                <li>Sub-item 1.2
+                    <ol>
+                        <li>Numbered 1.2.1</li>
+                        <li>Numbered 1.2.2</li>
+                    </ol>
+                </li>
+            </ul>
+        </li>
+        <li>Item 2</li>
+    </ul>
+</body>
+</html>

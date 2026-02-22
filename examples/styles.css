@@ -1,0 +1,209 @@
+/* ============================================================
+   Global Stylesheet for PDF Creator Examples
+   ============================================================ */
+
+/* CSS Paged Media Rules */
+@page {
+    size: A4;
+    margin: 20mm 15mm;
+
+    @top-center {
+        content: "PDF Creator — Test Suite";
+        font-family: 'Sarabun', sans-serif;
+        font-size: 9pt;
+        color: #999;
+    }
+
+    @bottom-right {
+        content: "Page " counter(page) " of " counter(pages);
+        font-family: 'Sarabun', sans-serif;
+        font-size: 9pt;
+        color: #666;
+    }
+
+    @bottom-left {
+        content: "pdfcreator-ts";
+        font-family: 'Sarabun', sans-serif;
+        font-size: 9pt;
+        color: #bbb;
+    }
+}
+
+@page :first {
+    margin-top: 30mm;
+
+    @top-center {
+        content: "";
+    }
+}
+
+/* Local font registration */
+@font-face {
+    font-family: 'Sarabun';
+    src: url('../fonts/Sarabun-Regular.ttf') format('truetype');
+    font-weight: 400;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Sarabun';
+    src: url('../fonts/Sarabun-Bold.ttf') format('truetype');
+    font-weight: 700;
+    font-style: normal;
+}
+
+@font-face {
+    font-family: 'Sarabun';
+    src: url('../fonts/Sarabun-Italic.ttf') format('truetype');
+    font-weight: 400;
+    font-style: italic;
+}
+
+@font-face {
+    font-family: 'Sarabun';
+    src: url('../fonts/Sarabun-BoldItalic.ttf') format('truetype');
+    font-weight: 700;
+    font-style: italic;
+}
+
+/* ---- Base ---- */
+body {
+    font-family: 'Sarabun', sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #333;
+    margin: 0;
+    padding: 0;
+}
+
+h1 { font-size: 28px; font-weight: bold; margin-bottom: 12px; color: #1a1a2e; }
+h2 { font-size: 22px; font-weight: bold; margin-bottom: 10px; color: #16213e; }
+h3 { font-size: 18px; font-weight: bold; margin-bottom: 8px; color: #0f3460; }
+h4 { font-size: 16px; font-weight: bold; margin-bottom: 6px; }
+p  { margin-bottom: 10px; }
+
+/* ---- Utilities ---- */
+.page-break { page-break-before: always; break-before: page; }
+.avoid-break { page-break-inside: avoid; break-inside: avoid; }
+.text-center { text-align: center; }
+.text-right  { text-align: right; }
+.text-left   { text-align: left; }
+
+/* ---- Colors / Backgrounds ---- */
+.bg-primary   { background-color: #1a1a2e; color: #fff; }
+.bg-secondary { background-color: #16213e; color: #fff; }
+.bg-accent    { background-color: #0f3460; color: #fff; }
+.bg-light     { background-color: #f8f9fa; }
+.bg-yellow    { background-color: #fff3cd; }
+.bg-green     { background-color: #d4edda; }
+.bg-red       { background-color: #f8d7da; }
+.bg-blue      { background-color: #cce5ff; }
+.bg-gray      { background-color: #e9ecef; }
+.color-muted  { color: #6c757d; }
+.color-danger { color: #dc3545; }
+.color-success { color: #28a745; }
+
+/* ---- Boxes / Cards ---- */
+.card {
+    border: 1px solid #dee2e6;
+    padding: 16px;
+    margin-bottom: 16px;
+    background-color: #fff;
+}
+
+.card-header {
+    background-color: #f8f9fa;
+    padding: 8px 16px;
+    margin-bottom: 12px;
+    border-bottom: 2px solid #dee2e6;
+    font-weight: bold;
+}
+
+.highlight-box {
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-left: 4px solid #0f3460;
+    background-color: #e8f0fe;
+}
+
+.warning-box {
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-left: 4px solid #ffc107;
+    background-color: #fff8e1;
+}
+
+/* ---- Tables ---- */
+.table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 16px;
+}
+
+.table th, .table td {
+    padding: 10px 12px;
+    border: 1px solid #dee2e6;
+    text-align: left;
+}
+
+.table th {
+    background-color: #1a1a2e;
+    color: #fff;
+    font-weight: bold;
+}
+
+.table .alt-row td {
+    background-color: #f8f9fa;
+}
+
+.table .total-row td {
+    font-weight: bold;
+    background-color: #e9ecef;
+    border-top: 2px solid #333;
+}
+
+/* ---- Typography ---- */
+.font-regular { font-weight: 400; font-style: normal; }
+.font-bold    { font-weight: bold; }
+.font-italic  { font-style: italic; }
+.font-bold-italic { font-weight: bold; font-style: italic; }
+.font-small   { font-size: 12px; }
+.font-large   { font-size: 20px; }
+.font-xl      { font-size: 26px; }
+
+/* ---- Page Header Banner ---- */
+.page-header {
+    background-color: #1a1a2e;
+    color: #fff;
+    padding: 24px 20px;
+    margin-bottom: 24px;
+}
+.page-header h1 { color: #fff; margin-bottom: 4px; font-size: 26px; }
+.page-header p  { color: #adb5bd; margin: 0; font-size: 13px; }
+
+/* ---- Cover ---- */
+.cover { text-align: center; padding: 60px 30px; }
+.cover-title    { font-size: 40px; font-weight: bold; color: #1a1a2e; margin-bottom: 8px; }
+.cover-subtitle { font-size: 18px; color: #6c757d; margin-bottom: 24px; }
+.cover-meta     { font-size: 13px; color: #999; }
+
+/* ---- Row layout ---- */
+.row  { display: flex; flex-direction: row; margin-bottom: 12px; }
+.col  { flex: 1; padding: 8px; }
+.col-wide { flex: 2; padding: 8px; }
+
+/* ---- Color swatch ---- */
+.swatch-row { display: flex; flex-direction: row; margin-bottom: 8px; }
+.swatch {
+    flex: 1;
+    height: 40px;
+    padding: 8px;
+    font-size: 11px;
+}
+
+/* ---- Invoice ---- */
+.invoice-header { display: flex; flex-direction: row; margin-bottom: 30px; }
+.invoice-title  { font-size: 36px; font-weight: bold; color: #1a1a2e; }
+.invoice-meta   { font-size: 13px; color: #666; }
+.invoice-from, .invoice-to { flex: 1; padding: 8px; }
+

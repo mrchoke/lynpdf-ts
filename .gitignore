@@ -1,0 +1,104 @@
+# dependencies (bun install)
+node_modules
+
+# output
+out
+dist
+*.tgz
+
+# code coverage
+coverage
+*.lcov
+
+# logs
+logs
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# TypeScript / build
+dist/
+build/
+lib/
+*.tsbuildinfo
+*.js.map
+
+# Logs
+.logs
+_.log
+report.[0-9]_.[0-9]_.[0-9]_.[0-9]_.json
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor directories and files
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# Temporary
+tmp/
+temp/
+*.tmp
+*.swp
+
+# Cache
+.cache/
+cache/
+
+# Output / generated PDFs
+examples/output/
+examples/ex1/
+tests/output/
+output/
+
+# Coverage
+coverage/
+.nyc_output/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Package lock (optional to track)
+# package-lock.json
+# pnpm-lock.yaml
+# yarn.lock
+
+# IDE history
+.history/
+
+
+# dotenv environment variable files
+.env
+.env.development.local
+.env.test.local
+.env.production.local
+.env.local
+
+# caches
+.eslintcache
+.cache
+*.tsbuildinfo
+
+# Twemoji cache
+cache/
+
+# Examples output and tests
+examples/output/
+examples/tests/
+
+# Test output
+tests/output/
+
+# IntelliJ based IDEs
+.idea
+
+# Finder (MacOS) folder config
+.DS_Store

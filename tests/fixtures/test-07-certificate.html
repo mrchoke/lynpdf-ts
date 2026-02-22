@@ -1,0 +1,231 @@
+<!-- ============================================================
+     Test 7: Certificate (ใบประกาศนียบัตร)
+     ============================================================
+     ทดสอบ: พื้นหลัง SVG, โลโก้หน่วยงาน (SVG), ข้อความจัดกลาง,
+     ลายเซ็นต์, QR Code (SVG), ฟอนต์หลายตัว
+     ============================================================ -->
+<html>
+<head><title>Test 7 — Thai Certificate</title></head>
+<body>
+
+<!-- ── Full-page certificate ── -->
+<div style="position: relative; width: 495px; height: 700px; margin: 0 auto; border: 3px solid #1a1a2e; padding: 0;">
+
+  <!-- Decorative top border bar -->
+  <div style="background-color: #1a1a2e; height: 8px; width: 100%;"></div>
+
+  <!-- Inner decorative frame -->
+  <div style="border: 1px solid #c9a84c; margin: 10px 20px 10px 20px; padding: 15px 30px; height: 640px; overflow: hidden;">
+
+    <!-- Gold accent line -->
+    <div style="background-color: #c9a84c; height: 2px; width: 100%; margin-bottom: 12px;"></div>
+
+    <!-- Organization logo (SVG) -->
+    <div style="text-align: center; margin-bottom: 6px;">
+      <svg width="65" height="65" viewBox="0 0 100 100">
+        <circle cx="50" cy="50" r="48" fill="none" stroke="#1a1a2e" stroke-width="3"/>
+        <circle cx="50" cy="50" r="40" fill="none" stroke="#c9a84c" stroke-width="1.5"/>
+        <polygon points="50,15 61,40 88,40 66,55 74,80 50,65 26,80 34,55 12,40 39,40" fill="#1a1a2e"/>
+        <text x="50" y="95" text-anchor="middle" font-size="9" fill="#1a1a2e" font-family="sans-serif">ACADEMY</text>
+      </svg>
+    </div>
+
+    <!-- Organization name -->
+    <div style="text-align: center; margin-bottom: 4px;">
+      <span style="font-family: 'Sarabun'; font-size: 14px; color: #1a1a2e; font-weight: bold;">สถาบันพัฒนาเทคโนโลยีดิจิทัล</span>
+    </div>
+    <div style="text-align: center; margin-bottom: 16px;">
+      <span style="font-family: 'Sarabun'; font-size: 11px; color: #666;">Digital Technology Development Academy</span>
+    </div>
+
+    <!-- Certificate title -->
+    <div style="text-align: center; margin-bottom: 4px;">
+      <span style="font-family: 'Kanit'; font-size: 26px; color: #c9a84c; font-weight: bold;">ประกาศนียบัตร</span>
+    </div>
+    <div style="text-align: center; margin-bottom: 14px;">
+      <span style="font-family: 'Sarabun'; font-size: 14px; color: #666;">CERTIFICATE OF COMPLETION</span>
+    </div>
+
+    <!-- Preamble -->
+    <div style="text-align: center; margin-bottom: 8px;">
+      <span style="font-family: 'Sarabun'; font-size: 13px; color: #333;">ขอมอบประกาศนียบัตรฉบับนี้เพื่อรับรองว่า</span>
+    </div>
+
+    <!-- Recipient name -->
+    <div style="text-align: center; margin-bottom: 4px; padding: 8px 0;">
+      <span style="font-family: 'Prompt'; font-size: 26px; color: #1a1a2e; font-weight: bold;">นายสมชาย ใจดีมาก</span>
+    </div>
+    <!-- Underline decoration -->
+    <div style="width: 300px; margin: 0 auto; border-bottom: 2px solid #c9a84c; margin-bottom: 12px;"></div>
+
+    <!-- Course description -->
+    <div style="text-align: center; margin-bottom: 6px;">
+      <span style="font-family: 'Sarabun'; font-size: 13px; color: #333;">ได้ผ่านการอบรมหลักสูตร</span>
+    </div>
+    <div style="text-align: center; margin-bottom: 6px;">
+      <span style="font-family: 'Kanit'; font-size: 18px; color: #0f3460; font-weight: bold;">การพัฒนาเว็บแอปพลิเคชันด้วย TypeScript</span>
+    </div>
+    <div style="text-align: center; margin-bottom: 4px;">
+      <span style="font-family: 'Sarabun'; font-size: 12px; color: #666;">Web Application Development with TypeScript</span>
+    </div>
+    <div style="text-align: center; margin-bottom: 12px;">
+      <span style="font-family: 'Sarabun'; font-size: 12px; color: #888;">ระยะเวลาอบรม 40 ชั่วโมง (5 วัน) | รุ่นที่ 12/2569</span>
+    </div>
+
+    <!-- Date -->
+    <div style="text-align: center; margin-bottom: 16px;">
+      <span style="font-family: 'Sarabun'; font-size: 13px; color: #333;">ให้ไว้ ณ วันที่ 15 กุมภาพันธ์ พ.ศ. 2569</span>
+    </div>
+
+    <!-- Signature section: two columns -->
+    <div style="display: flex; flex-direction: row; padding: 0 10px;">
+      <!-- Left: Signer -->
+      <div style="flex: 1; text-align: center;">
+        <!-- Signature SVG -->
+        <svg width="120" height="40" viewBox="0 0 120 40">
+          <path d="M10,30 Q20,5 40,25 T70,20 Q80,15 90,25 T110,15" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+          <path d="M25,32 Q35,28 50,35 T80,30" fill="none" stroke="#333" stroke-width="1" stroke-linecap="round"/>
+        </svg>
+        <div style="border-top: 1px solid #999; width: 150px; margin: 0 auto; padding-top: 4px;">
+          <span style="font-family: 'Sarabun'; font-size: 13px; color: #1a1a2e; font-weight: bold;">ศ.ดร.วิชัย สรรเสริญ</span>
+        </div>
+        <div>
+          <span style="font-family: 'Sarabun'; font-size: 11px; color: #666;">ผู้อำนวยการสถาบัน</span>
+        </div>
+      </div>
+
+      <!-- Right: QR Code for verification -->
+      <div style="flex: 1; text-align: center;">
+        <!-- QR Code SVG (simplified representation) -->
+        <svg width="60" height="60" viewBox="0 0 70 70">
+          <!-- QR border -->
+          <rect x="0" y="0" width="70" height="70" fill="white" stroke="#333" stroke-width="1"/>
+          <!-- QR finder patterns (top-left) -->
+          <rect x="4" y="4" width="18" height="18" fill="#1a1a2e"/>
+          <rect x="7" y="7" width="12" height="12" fill="white"/>
+          <rect x="9" y="9" width="8" height="8" fill="#1a1a2e"/>
+          <!-- QR finder patterns (top-right) -->
+          <rect x="48" y="4" width="18" height="18" fill="#1a1a2e"/>
+          <rect x="51" y="7" width="12" height="12" fill="white"/>
+          <rect x="53" y="9" width="8" height="8" fill="#1a1a2e"/>
+          <!-- QR finder patterns (bottom-left) -->
+          <rect x="4" y="48" width="18" height="18" fill="#1a1a2e"/>
+          <rect x="7" y="51" width="12" height="12" fill="white"/>
+          <rect x="9" y="53" width="8" height="8" fill="#1a1a2e"/>
+          <!-- QR data modules (decorative) -->
+          <rect x="26" y="4" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="34" y="4" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="26" y="12" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="30" y="8" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="38" y="12" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="4" y="26" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="12" y="26" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="8" y="30" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="26" y="26" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="30" y="30" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="34" y="26" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="38" y="34" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="48" y="26" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="56" y="30" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="52" y="34" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="26" y="48" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="34" y="48" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="30" y="52" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="48" y="48" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="56" y="52" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="52" y="56" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="60" y="56" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="38" y="56" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="42" y="60" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="48" y="60" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="56" y="60" width="4" height="4" fill="#1a1a2e"/>
+          <rect x="60" y="48" width="4" height="4" fill="#1a1a2e"/>
+        </svg>
+        <div style="margin-top: 4px;">
+          <span style="font-family: 'Sarabun'; font-size: 9px; color: #888;">สแกนเพื่อตรวจสอบ</span>
+        </div>
+        <div>
+          <span style="font-family: 'Sarabun'; font-size: 8px; color: #aaa;">REF: CERT-2569-01234</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Gold accent line bottom -->
+    <div style="background-color: #c9a84c; height: 2px; width: 100%; margin-top: 10px;"></div>
+
+  </div>
+
+  <!-- Decorative bottom border bar -->
+  <div style="background-color: #1a1a2e; height: 8px; width: 100%;"></div>
+
+</div>
+
+<!-- ── Second certificate: landscape-style content on next page ── -->
+<div class="page-break"></div>
+
+<h1>Test 7: Certificate (ใบประกาศนียบัตร)</h1>
+<p class="text-muted">ทดสอบการสร้างใบประกาศนียบัตรภาษาไทยแบบเต็มรูปแบบ พร้อม SVG Logo, ลายเซ็นต์, QR Code</p>
+
+<div class="test-section">
+  <h3>Test 7.1 — องค์ประกอบใบประกาศ</h3>
+  <p class="test-label">ตรวจสอบองค์ประกอบที่ต้องมีในใบประกาศ:</p>
+
+  <div style="padding: 8px 12px;">
+    <p>✓ โลโก้หน่วยงาน (SVG inline) — ดาวในวงกลม</p>
+    <p>✓ ชื่อหน่วยงาน — สถาบันพัฒนาเทคโนโลยีดิจิทัล</p>
+    <p>✓ หัวข้อ "ประกาศนียบัตร" — ฟอนต์ Kanit สีทอง</p>
+    <p>✓ ชื่อผู้รับ — นายสมชาย ใจดีมาก (ฟอนต์ Prompt)</p>
+    <p>✓ ชื่อหลักสูตร — การพัฒนาเว็บแอปพลิเคชันด้วย TypeScript</p>
+    <p>✓ วันที่ — 15 กุมภาพันธ์ พ.ศ. 2569</p>
+    <p>✓ ลายเซ็นต์ (SVG path) — ศ.ดร.วิชัย สรรเสริญ</p>
+    <p>✓ QR Code สำหรับตรวจสอบ (SVG) — REF: CERT-2569-01234</p>
+    <p>✓ กรอบตกแต่ง + แถบสี + เส้นทอง</p>
+  </div>
+
+  <div class="test-expect">✓ ใบประกาศต้องแสดงผลครบทุกองค์ประกอบ, SVG ต้อง render ถูกต้อง, ฟอนต์หลายตัวต้องใช้งานได้</div>
+</div>
+
+<div class="test-section">
+  <h3>Test 7.2 — SVG Support</h3>
+  <p class="test-label">ทดสอบ SVG หลากหลายรูปแบบ:</p>
+
+  <div style="display: flex; flex-direction: row; margin-bottom: 12px;">
+    <div style="flex: 1; text-align: center; padding: 8px;">
+      <svg width="60" height="60" viewBox="0 0 60 60">
+        <rect x="5" y="5" width="50" height="50" rx="8" fill="#e8f0fe" stroke="#0f3460" stroke-width="2"/>
+        <text x="30" y="38" text-anchor="middle" font-size="20" fill="#0f3460">★</text>
+      </svg>
+      <div><span style="font-size: 10px; color: #666;">Rounded Rect</span></div>
+    </div>
+    <div style="flex: 1; text-align: center; padding: 8px;">
+      <svg width="60" height="60" viewBox="0 0 60 60">
+        <circle cx="30" cy="30" r="25" fill="#d4edda" stroke="#28a745" stroke-width="2"/>
+        <polyline points="18,30 26,38 42,22" fill="none" stroke="#28a745" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <div><span style="font-size: 10px; color: #666;">Checkmark</span></div>
+    </div>
+    <div style="flex: 1; text-align: center; padding: 8px;">
+      <svg width="60" height="60" viewBox="0 0 60 60">
+        <defs>
+          <linearGradient id="grad1" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#667eea;stop-opacity:1" />
+            <stop offset="100%" style="stop-color:#764ba2;stop-opacity:1" />
+          </linearGradient>
+        </defs>
+        <rect x="5" y="5" width="50" height="50" rx="10" fill="url(#grad1)"/>
+      </svg>
+      <div><span style="font-size: 10px; color: #666;">Gradient</span></div>
+    </div>
+    <div style="flex: 1; text-align: center; padding: 8px;">
+      <svg width="60" height="60" viewBox="0 0 60 60">
+        <path d="M30,8 L36,24 L54,24 L40,34 L44,50 L30,40 L16,50 L20,34 L6,24 L24,24 Z" fill="#ffc107" stroke="#ff9800" stroke-width="1"/>
+      </svg>
+      <div><span style="font-size: 10px; color: #666;">Star Path</span></div>
+    </div>
+  </div>
+
+  <div class="test-expect">✓ SVG shapes ต้อง render ถูกต้อง: rect, circle, path, polyline, gradient</div>
+</div>
+
+</body>
+</html>

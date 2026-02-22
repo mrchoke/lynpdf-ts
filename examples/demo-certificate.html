@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <title>Certificate — ใบประกาศนียบัตร</title>
+    <link rel="stylesheet" href="styles.css">
+    <style>
+        @page {
+            size: A4;
+            margin: 20mm;
+            @top-center { content: ""; }
+            @bottom-right { content: ""; }
+            @bottom-left { content: ""; }
+        }
+
+        .cert-outer {
+            border: 3px solid #1a1a2e;
+            padding: 0;
+            width: 100%;
+        }
+
+        .cert-topbar {
+            background-color: #1a1a2e;
+            height: 8px;
+            width: 100%;
+        }
+
+        .cert-inner {
+            border: 1px solid #c9a84c;
+            margin: 14px 24px;
+            padding: 24px 36px;
+        }
+
+        .cert-gold-line {
+            background-color: #c9a84c;
+            height: 2px;
+            width: 100%;
+        }
+
+        .cert-center {
+            text-align: center;
+        }
+
+        .cert-title {
+            font-family: 'Kanit';
+            font-size: 32px;
+            color: #c9a84c;
+            font-weight: bold;
+        }
+
+        .cert-subtitle {
+            font-family: 'Sarabun';
+            font-size: 14px;
+            color: #666;
+        }
+
+        .cert-name {
+            font-family: 'Prompt';
+            font-size: 28px;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        .cert-name-line {
+            width: 320px;
+            margin: 0 auto;
+            border-bottom: 2px solid #c9a84c;
+        }
+
+        .cert-course {
+            font-family: 'Kanit';
+            font-size: 20px;
+            color: #0f3460;
+            font-weight: bold;
+        }
+
+        .cert-body {
+            font-family: 'Sarabun';
+            font-size: 13px;
+            color: #333;
+        }
+
+        .cert-small {
+            font-family: 'Sarabun';
+            font-size: 12px;
+            color: #666;
+        }
+
+        .cert-tiny {
+            font-family: 'Sarabun';
+            font-size: 10px;
+            color: #888;
+        }
+
+        .cert-org {
+            font-family: 'Sarabun';
+            font-size: 15px;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        .cert-signer {
+            font-family: 'Sarabun';
+            font-size: 14px;
+            color: #1a1a2e;
+            font-weight: bold;
+        }
+
+        .cert-signer-title {
+            font-family: 'Sarabun';
+            font-size: 11px;
+            color: #666;
+        }
+
+        .cert-sig-row {
+            display: flex;
+            flex-direction: row;
+            padding: 0 24px;
+            margin-top: 8px;
+        }
+
+        .cert-sig-col {
+            flex: 1;
+            text-align: center;
+        }
+
+        .cert-sig-line {
+            border-top: 1px solid #999;
+            width: 160px;
+            margin: 0 auto;
+            padding-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="cert-outer">
+    <div class="cert-topbar"></div>
+
+    <div class="cert-inner">
+        <div class="cert-gold-line" style="margin-bottom: 20px;"></div>
+
+        <!-- Logo -->
+        <div class="cert-center" style="margin-bottom: 10px;">
+            <svg width="90" height="90" viewBox="0 0 100 100">
+                <circle cx="50" cy="50" r="48" fill="none" stroke="#1a1a2e" stroke-width="3"/>
+                <circle cx="50" cy="50" r="40" fill="none" stroke="#c9a84c" stroke-width="1.5"/>
+                <polygon points="50,15 61,40 88,40 66,55 74,80 50,65 26,80 34,55 12,40 39,40" fill="#1a1a2e"/>
+                <text x="50" y="96" text-anchor="middle" font-size="9" fill="#1a1a2e" font-family="sans-serif">ACADEMY</text>
+            </svg>
+        </div>
+
+        <!-- Organization -->
+        <div class="cert-center" style="margin-bottom: 4px;">
+            <span class="cert-org">สถาบันพัฒนาเทคโนโลยีดิจิทัล</span>
+        </div>
+        <div class="cert-center" style="margin-bottom: 20px;">
+            <span class="cert-small">Digital Technology Development Academy</span>
+        </div>
+
+        <!-- Title -->
+        <div class="cert-center" style="margin-bottom: 6px;">
+            <span class="cert-title">ประกาศนียบัตร</span>
+        </div>
+        <div class="cert-center" style="margin-bottom: 24px;">
+            <span class="cert-subtitle">CERTIFICATE OF COMPLETION</span>
+        </div>
+
+        <!-- Preamble -->
+        <div class="cert-center" style="margin-bottom: 10px;">
+            <span class="cert-body">ขอมอบประกาศนียบัตรฉบับนี้เพื่อรับรองว่า</span>
+        </div>
+
+        <!-- Recipient -->
+        <div class="cert-center" style="padding: 10px 0; margin-bottom: 4px;">
+            <span class="cert-name">นายสมชาย ใจดีมาก</span>
+        </div>
+        <div class="cert-name-line" style="margin-bottom: 14px;"></div>
+
+        <!-- Course -->
+        <div class="cert-center" style="margin-bottom: 6px;">
+            <span class="cert-body">ได้ผ่านการอบรมหลักสูตร</span>
+        </div>
+        <div class="cert-center" style="margin-bottom: 6px;">
+            <span class="cert-course">การพัฒนาเว็บแอปพลิเคชันด้วย TypeScript</span>
+        </div>
+        <div class="cert-center" style="margin-bottom: 6px;">
+            <span class="cert-small">Web Application Development with TypeScript</span>
+        </div>
+        <div class="cert-center" style="margin-bottom: 20px;">
+            <span class="cert-tiny">ระยะเวลาอบรม 40 ชั่วโมง (5 วัน) | รุ่นที่ 12/2569</span>
+        </div>
+
+        <!-- Date -->
+        <div class="cert-center" style="margin-bottom: 28px;">
+            <span class="cert-body">ให้ไว้ ณ วันที่ 15 กุมภาพันธ์ พ.ศ. 2569</span>
+        </div>
+
+        <!-- Signatures -->
+        <div class="cert-sig-row">
+            <div class="cert-sig-col">
+                <svg width="130" height="40" viewBox="0 0 130 40">
+                    <path d="M10,30 Q20,5 40,25 T70,20 Q80,15 95,25 T120,12" fill="none" stroke="#333" stroke-width="1.5" stroke-linecap="round"/>
+                    <path d="M25,34 Q35,28 55,35 T90,30" fill="none" stroke="#333" stroke-width="1" stroke-linecap="round"/>
+                </svg>
+                <div class="cert-sig-line">
+                    <span class="cert-signer">ศ.ดร.วิชัย สรรเสริญ</span>
+                </div>
+                <div>
+                    <span class="cert-signer-title">ผู้อำนวยการสถาบัน</span>
+                </div>
+            </div>
+
+            <div class="cert-sig-col">
+                <svg width="70" height="70" viewBox="0 0 70 70">
+                    <rect x="0" y="0" width="70" height="70" fill="white" stroke="#333" stroke-width="1"/>
+                    <rect x="4" y="4" width="18" height="18" fill="#1a1a2e"/>
+                    <rect x="7" y="7" width="12" height="12" fill="white"/>
+                    <rect x="9" y="9" width="8" height="8" fill="#1a1a2e"/>
+                    <rect x="48" y="4" width="18" height="18" fill="#1a1a2e"/>
+                    <rect x="51" y="7" width="12" height="12" fill="white"/>
+                    <rect x="53" y="9" width="8" height="8" fill="#1a1a2e"/>
+                    <rect x="4" y="48" width="18" height="18" fill="#1a1a2e"/>
+                    <rect x="7" y="51" width="12" height="12" fill="white"/>
+                    <rect x="9" y="53" width="8" height="8" fill="#1a1a2e"/>
+                    <rect x="26" y="4" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="34" y="4" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="26" y="12" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="30" y="8" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="38" y="12" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="4" y="26" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="12" y="26" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="26" y="26" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="30" y="30" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="34" y="26" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="48" y="26" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="56" y="30" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="26" y="48" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="34" y="48" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="48" y="48" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="56" y="52" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="52" y="56" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="60" y="56" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="48" y="60" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="56" y="60" width="4" height="4" fill="#1a1a2e"/>
+                    <rect x="60" y="48" width="4" height="4" fill="#1a1a2e"/>
+                </svg>
+                <div style="margin-top: 4px;">
+                    <span class="cert-tiny">สแกนเพื่อตรวจสอบ</span>
+                </div>
+                <div>
+                    <span style="font-size: 8px; color: #aaa;">REF: CERT-2569-01234</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="cert-gold-line" style="margin-top: 20px;"></div>
+    </div>
+
+    <div class="cert-topbar"></div>
+</div>
+
+</body>
+</html>
