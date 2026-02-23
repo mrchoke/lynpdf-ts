@@ -13,11 +13,8 @@
  *   3. applyTheadRepeatShift — thead repeat adjustment
  */
 
-import { PAGE_H, PAGE_MARGIN } from '../constants'
-import type { LayoutNode } from './layout-engine'
-
-/** Usable content height per page (excluding top + bottom margin). */
-const CONTENT_H = PAGE_H - PAGE_MARGIN * 2;
+import { PAGE_H, PAGE_MARGIN } from '../constants';
+import type { LayoutNode } from './layout-engine';
 
 /**
  * Shift a layout node (and all descendants) by a Y delta.
@@ -33,9 +30,9 @@ function shiftSubtree(node: LayoutNode, deltaY: number): void {
  * Helper: push a child to the content start of the next page.
  * Returns the delta applied (0 if no push was needed).
  */
-function pushToNextPage(child: LayoutNode): number {
+function pushToNextPage(child: LayoutNode, margin: number): number {
   const pageIdx = Math.floor(child.y / PAGE_H);
-  const target = (pageIdx + 1) * PAGE_H + PAGE_MARGIN;
+  const target = (pageIdx + 1) * PAGE_H + margin;
   const delta = target - child.y;
   if (delta > 0) {
     shiftSubtree(child, delta);
@@ -62,7 +59,8 @@ function pushToNextPage(child: LayoutNode): number {
  *
  * Each push cascades to all subsequent siblings via `extraShift`.
  */
-export function applyPageFlow(root: LayoutNode): void {
+export function applyPageFlow(root: LayoutNode, pageMargin: number = PAGE_MARGIN): void {
+  const CONTENT_H = PAGE_H - pageMargin * 2;
   const process = (node: LayoutNode): number => {
     let extraShift = 0;
 
@@ -82,8 +80,8 @@ export function applyPageFlow(root: LayoutNode): void {
         const localY = child.y - pageIdx * PAGE_H;
         // Push to the next page unless already at (or near) the
         // content start of the current page.
-        if (localY > PAGE_MARGIN + 2) {
-          const delta = pushToNextPage(child);
+        if (localY > pageMargin + 2) {
+          const delta = pushToNextPage(child, pageMargin);
           extraShift += delta;
         }
       }
@@ -96,8 +94,8 @@ export function applyPageFlow(root: LayoutNode): void {
       {
         const pageIdx = Math.floor(child.y / PAGE_H);
         const localY = child.y - pageIdx * PAGE_H;
-        if (pageIdx > 0 && localY < PAGE_MARGIN - 0.5) {
-          const delta = PAGE_MARGIN - localY;
+        if (pageIdx > 0 && localY < pageMargin - 0.5) {
+          const delta = pageMargin - localY;
           shiftSubtree(child, delta);
           extraShift += delta;
         }
@@ -119,7 +117,7 @@ export function applyPageFlow(root: LayoutNode): void {
       {
         const childBottom = child.y + child.height;
         const pageIdx = Math.floor(child.y / PAGE_H);
-        const footerTop = (pageIdx + 1) * PAGE_H - PAGE_MARGIN;
+        const footerTop = (pageIdx + 1) * PAGE_H - pageMargin;
         const localYOnPage = child.y - pageIdx * PAGE_H;
         const tag = child.tagName || '';
         const isTableContainer =
@@ -134,14 +132,14 @@ export function applyPageFlow(root: LayoutNode): void {
           // For short <tr>: lower the threshold by the row's own height
           // so rows near the bottom of the page are caught.
           // For other elements: use the standard threshold.
-          const nearFooterThreshold = PAGE_H - 2 * PAGE_MARGIN; // ≈741.89
+          const nearFooterThreshold = PAGE_H - 2 * pageMargin;
           const threshold =
             tag === 'tr' && child.height < CONTENT_H / 2
               ? nearFooterThreshold - child.height
               : nearFooterThreshold;
 
           if (localYOnPage > threshold) {
-            const delta = pushToNextPage(child);
+            const delta = pushToNextPage(child, pageMargin);
             extraShift += delta;
           }
         }
@@ -160,7 +158,7 @@ export function applyPageFlow(root: LayoutNode): void {
           const startPage = Math.floor(child.y / PAGE_H);
           const endPage = Math.floor((child.y + child.height - 1) / PAGE_H);
           if (startPage !== endPage) {
-            const delta = pushToNextPage(child);
+            const delta = pushToNextPage(child, pageMargin);
             extraShift += delta;
           }
         }
@@ -173,8 +171,15 @@ export function applyPageFlow(root: LayoutNode): void {
         if (breakInside === 'avoid' && child.height > 0 && child.height < CONTENT_H) {
           const startPage = Math.floor(child.y / PAGE_H);
           const endPage = Math.floor((child.y + child.height - 1) / PAGE_H);
-          if (startPage !== endPage) {
-            const delta = pushToNextPage(child);
+          // Also push when the element fits on one page but its bottom edge
+          // falls inside the footer margin zone — the engine would otherwise
+          // believe there is enough room (startPage === endPage) while the
+          // content is actually hidden beneath the footer margin.
+          const pageIdx = Math.floor(child.y / PAGE_H);
+          const footerTop = (pageIdx + 1) * PAGE_H - pageMargin;
+          const bottomInFooter = child.y + child.height > footerTop;
+          if (startPage !== endPage || bottomInFooter) {
+            const delta = pushToNextPage(child, pageMargin);
             extraShift += delta;
           }
         }
@@ -187,8 +192,8 @@ export function applyPageFlow(root: LayoutNode): void {
         const childBottom = child.y + child.height;
         const pageIdx = Math.floor(childBottom / PAGE_H);
         const localY = childBottom - pageIdx * PAGE_H;
-        if (localY > PAGE_MARGIN + 2) {
-          const nextTop = (pageIdx + 1) * PAGE_H + PAGE_MARGIN;
+        if (localY > pageMargin + 2) {
+          const nextTop = (pageIdx + 1) * PAGE_H + pageMargin;
           const additionalShift = nextTop - childBottom;
           if (additionalShift > 0) {
             extraShift += additionalShift;
@@ -232,7 +237,16 @@ export function applyPageBreakInside(root: LayoutNode): void {
  *
  * It simply ensures no small element overlaps the header or footer margin.
  */
-export function applyMarginZoneCleanup(root: LayoutNode): void {
+export function applyMarginZoneCleanup(root: LayoutNode, pageMargin: number = PAGE_MARGIN): void {
+  const CONTENT_H = PAGE_H - pageMargin * 2;
+
+  // Tags whose internal layout is managed by applyPageFlow (table-aware logic).
+  // We must NOT push their children or recurse into them here — doing so creates
+  // cascading extraShift that produces phantom gaps between table rows.
+  const TABLE_TAGS = new Set([
+    'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
+  ]);
+
   const process = (node: LayoutNode): number => {
     let extraShift = 0;
 
@@ -243,46 +257,325 @@ export function applyMarginZoneCleanup(root: LayoutNode): void {
         shiftSubtree(child, extraShift);
       }
 
-      // Header zone: push down to PAGE_MARGIN
-      {
+      const tag = child.tagName || '';
+      const isTableElement = TABLE_TAGS.has(tag);
+
+      // Header zone: push down to pageMargin (skip table internals)
+      if (!isTableElement) {
         const pageIdx = Math.floor(child.y / PAGE_H);
         const localY = child.y - pageIdx * PAGE_H;
-        if (pageIdx > 0 && localY > 0 && localY < PAGE_MARGIN - 0.5) {
-          const delta = PAGE_MARGIN - localY;
+        if (pageIdx > 0 && localY > 0 && localY < pageMargin - 0.5) {
+          const delta = pageMargin - localY;
           shiftSubtree(child, delta);
           extraShift += delta;
         }
       }
 
-      // Footer zone: conservative push — only elements near the footer
-      {
+      // Footer zone: conservative push — only non-table elements near the footer
+      if (!isTableElement) {
         const childBottom = child.y + child.height;
         const pageIdx = Math.floor(child.y / PAGE_H);
-        const footerTop = (pageIdx + 1) * PAGE_H - PAGE_MARGIN;
+        const footerTop = (pageIdx + 1) * PAGE_H - pageMargin;
         const localYOnPage = child.y - pageIdx * PAGE_H;
-        const tag = child.tagName || '';
-        const isTableContainer =
-          tag === 'tbody' || tag === 'thead' || tag === 'tfoot' || tag === 'table';
-        const nearFooterThreshold = PAGE_H - 2 * PAGE_MARGIN;
+        const nearFooterThreshold = PAGE_H - 2 * pageMargin;
 
         if (
           childBottom > footerTop &&
           child.height > 0 &&
           child.height <= CONTENT_H &&
-          !isTableContainer &&
           localYOnPage > nearFooterThreshold
         ) {
-          const delta = pushToNextPage(child);
+          const delta = pushToNextPage(child, pageMargin);
           extraShift += delta;
         }
       }
 
-      // Recurse into children
-      const childExtra = process(child);
-      extraShift += childExtra;
+      // Recurse into children — but NOT into table structures.
+      // Table internal layout (row positions, page breaks) is fully handled
+      // by applyPageFlow; recursing here would produce double-shifts.
+      if (!isTableElement) {
+        const childExtra = process(child);
+        extraShift += childExtra;
+      }
     }
 
     return extraShift;
+  };
+
+  process(root);
+}
+
+// ─── Table Row Gap Compaction ──────────────────────────────────────
+
+/**
+ * After applyPageFlow and applyTheadRepeatShift, consecutive table rows
+ * may have gaps between them ON THE SAME PAGE.  This happens when:
+ *
+ *   1. applyPageFlow pushes a row from page N to page N+1 (footer avoidance)
+ *   2. applyTheadRepeatShift shifts the table down
+ *   3. The pushed row and its predecessor now both sit on page N+1
+ *      but their absolute positions still reflect the old page break
+ *
+ * This pass walks every tbody / thead / tfoot and compacts any within-page
+ * gaps between consecutive rows.
+ *
+ * IMPORTANT: compaction is purely LOCAL — it is NOT propagated to siblings
+ * outside the table section.  Propagating negative shifts would cascade
+ * across the entire document, pulling subsequent content into header zones.
+ * The trade-off is some empty space at the bottom of compacted tables,
+ * which is far less visible than displaced content.
+ */
+export function compactTableRowGaps(root: LayoutNode, pageMargin: number = PAGE_MARGIN): void {
+  const visit = (node: LayoutNode) => {
+    if (
+      node.tagName === 'tbody' ||
+      node.tagName === 'thead' ||
+      node.tagName === 'tfoot'
+    ) {
+      let compaction = 0;
+
+      for (let r = 0; r < node.children.length; r++) {
+        const row = node.children[r]!;
+        if (row.tagName !== 'tr') continue;
+
+        if (compaction < 0) {
+          shiftSubtree(row, compaction);
+        }
+
+        // Look ahead: is the next tr on the same page with a gap?
+        if (r + 1 < node.children.length) {
+          const next = node.children[r + 1]!;
+          if (next.tagName !== 'tr') continue;
+
+          const nextY = next.y + compaction;
+          const rowEnd = row.y + row.height;
+          const rowPage = Math.floor(row.y / PAGE_H);
+          const nextPage = Math.floor(nextY / PAGE_H);
+
+          if (rowPage === nextPage) {
+            const gap = nextY - rowEnd;
+            if (gap > 1) {
+              compaction -= gap;
+            }
+          }
+        }
+      }
+      // Compaction stays local — NOT returned to parent
+      return;
+    }
+
+    // Recurse for non-table-section nodes to find nested tables
+    for (const child of node.children) {
+      visit(child);
+    }
+  };
+
+  visit(root);
+}
+
+// ─── Table Row Position Enforcement ────────────────────────────────
+
+/**
+ * Final cleanup for table rows: fix header-zone violations and rows
+ * that straddle page boundaries.
+ *
+ * After applyTheadRepeatShift shifts entire tables, some rows may end up:
+ *   - In the header zone (localY < pageMargin)
+ *   - Straddling a page boundary (start and end on different pages)
+ *
+ * This pass walks each tbody/thead/tfoot, fixes rows within it, and
+ * cascades shifts to subsequent sibling rows — but NEVER propagates
+ * beyond the table section container.
+ */
+export function fixTableRowPositions(root: LayoutNode, pageMargin: number = PAGE_MARGIN): void {
+  const CONTENT_H = PAGE_H - pageMargin * 2;
+
+  const visit = (node: LayoutNode) => {
+    if (
+      node.tagName === 'tbody' ||
+      node.tagName === 'thead' ||
+      node.tagName === 'tfoot'
+    ) {
+      let extraShift = 0;
+
+      for (const row of node.children) {
+        if (row.tagName !== 'tr') continue;
+
+        if (extraShift > 0) {
+          shiftSubtree(row, extraShift);
+        }
+
+        // Header zone: push down to pageMargin
+        const pageIdx = Math.floor(row.y / PAGE_H);
+        const localY = row.y - pageIdx * PAGE_H;
+        if (pageIdx > 0 && localY > 0 && localY < pageMargin - 0.5) {
+          const delta = pageMargin - localY;
+          shiftSubtree(row, delta);
+          extraShift += delta;
+        }
+
+        // Row integrity: don't let a row straddle pages
+        if (row.height > 0 && row.height <= CONTENT_H) {
+          const startPage = Math.floor(row.y / PAGE_H);
+          const endPage = Math.floor((row.y + row.height - 1) / PAGE_H);
+          if (startPage !== endPage) {
+            const delta = pushToNextPage(row, pageMargin);
+            extraShift += delta;
+          }
+        }
+      }
+      // Shifts stay local — NOT propagated beyond the section
+      return;
+    }
+
+    for (const child of node.children) {
+      visit(child);
+    }
+  };
+
+  visit(root);
+}
+
+// ─── Sibling Gap Compaction ────────────────────────────────────────
+
+/**
+ * Return the deepest visual bottom of a node (max of all descendant y+h).
+ * Unlike node.height (which is the Yoga container height and may be stale
+ * after row pushes), this reflects where content ACTUALLY ends.
+ */
+function actualBottom(node: LayoutNode): number {
+  let b = node.y + node.height;
+  for (const child of node.children) {
+    b = Math.max(b, actualBottom(child));
+  }
+  return b;
+}
+
+/**
+ * Final compaction pass: close same-page gaps between non-table siblings.
+ *
+ * **Why this is needed:**
+ *
+ * applyPageFlow pushes elements that straddle the footer zone to the next
+ * page.  The push delta is added to extraShift, so subsequent siblings
+ * receive additional shift.  When applyTheadRepeatShift then shifts
+ * everything further forward, elements that were on *different* pages
+ * may end up on the *same* page — but with a stale page-break gap
+ * between them (100–150 pt of blank white space).
+ *
+ * This pass walks every non-table container and, for each pair of
+ * consecutive same-page children, removes excess gap beyond the
+ * expected CSS margin.  It cascades the compaction to all subsequent
+ * siblings (like compactTableRowGaps) but does NOT cross page
+ * boundaries or pull elements from one page to another.
+ */
+export function compactSiblingGaps(root: LayoutNode, pageMargin: number = PAGE_MARGIN): void {
+  const TABLE_TAGS = new Set([
+    'table', 'thead', 'tbody', 'tfoot', 'tr', 'th', 'td',
+  ]);
+
+  const process = (node: LayoutNode) => {
+    const tag = node.tagName || '';
+
+    // Don't touch table internals — handled by compactTableRowGaps
+    if (TABLE_TAGS.has(tag)) return;
+
+    let compaction = 0;
+
+    for (let i = 0; i < node.children.length; i++) {
+      const child = node.children[i]!;
+
+      // Apply pending compaction — but NEVER pull an element across a page
+      // boundary backward (from page N to page N-1).
+      if (compaction < 0) {
+        const origPage = Math.floor(child.y / PAGE_H);
+        const newY = child.y + compaction;
+        const newPage = Math.floor(newY / PAGE_H);
+
+        if (newPage < origPage) {
+          // Compaction would cross a page boundary.
+          // Limit: at most move the child to the content start of its
+          // current page (pageMargin), preserving the page break.
+          const pageTop = origPage * PAGE_H + pageMargin;
+          const limitedShift = pageTop - child.y;
+          if (limitedShift < -0.5) {
+            shiftSubtree(child, limitedShift);
+            compaction = limitedShift; // reset cascade to this reduced amount
+          } else {
+            // Already at or past the content start — skip compaction entirely
+            compaction = 0;
+          }
+        } else {
+          shiftSubtree(child, compaction);
+          // Ensure we don't land in the header zone after compaction
+          const localY = child.y - Math.floor(child.y / PAGE_H) * PAGE_H;
+          if (Math.floor(child.y / PAGE_H) > 0 && localY < pageMargin - 0.5) {
+            const fix = pageMargin - localY;
+            shiftSubtree(child, fix);
+            compaction += fix; // reduce compaction magnitude
+          }
+        }
+      }
+
+      // Look ahead: gap to next sibling on same page?
+      if (i + 1 < node.children.length) {
+        const next = node.children[i + 1]!;
+        const nextY = next.y + compaction; // where next will land after compaction
+
+        // Compute actual visual bottom (including pushed descendants)
+        const childActBottom = actualBottom(child);
+
+        const bottomPage = Math.floor(childActBottom / PAGE_H);
+        const nextPage = Math.floor(nextY / PAGE_H);
+
+        if (bottomPage === nextPage) {
+          const gap = nextY - childActBottom;
+
+          // Expected gap from CSS margins
+          const prevMB = parseFloat(child.styles['margin-bottom'] || '0') || 0;
+          const nextMT = parseFloat(next.styles['margin-top'] || '0') || 0;
+          let expectedGap = prevMB + nextMT;
+
+          // For multi-page tables with thead, the renderer shifts tbody
+          // rows on continuation pages by theadHeight.  The layout's
+          // applyTheadRepeatShift accounts for this by shifting
+          // siblings, but that produces a "gap" from the layout's
+          // perspective.  We must NOT compact this renderer-needed gap.
+          if (child.tagName === 'table') {
+            const thead = child.children.find((c: LayoutNode) => c.tagName === 'thead');
+            const tbody = child.children.find((c: LayoutNode) => c.tagName === 'tbody');
+            if (thead && tbody) {
+              const tableStartPage = Math.floor(child.y / PAGE_H);
+              const tableEndPage = Math.floor(childActBottom / PAGE_H);
+              if (tableEndPage > tableStartPage) {
+                expectedGap += thead.height;
+              }
+            }
+          }
+
+          // Add a small tolerance; the CSS margin parsing may be slightly off
+          const maxGap = Math.max(expectedGap + 5, 20);
+
+          if (gap > maxGap) {
+            const excess = gap - maxGap;
+
+            // Safety: shifted element must stay on the same page AND
+            // not land in the header zone
+            const newNextY = nextY - excess;
+            const newNextPage = Math.floor(newNextY / PAGE_H);
+            const newLocalY = newNextY - newNextPage * PAGE_H;
+            if (newNextPage === bottomPage && newLocalY >= pageMargin - 0.5) {
+              compaction -= excess;
+            }
+          }
+        }
+      }
+    }
+
+    // Recurse into non-table children
+    for (const child of node.children) {
+      process(child);
+    }
   };
 
   process(root);
@@ -344,12 +637,23 @@ function estimateLineCount(block: LayoutNode): { lineCount: number; lineH: numbe
  * table by the same correction amount so they don't overlap with the
  * shifted table content.
  */
-export function applyTheadRepeatShift(root: LayoutNode): void {
+export function applyTheadRepeatShift(root: LayoutNode, pageMargin: number = PAGE_MARGIN): void {
   const process = (node: LayoutNode): number => {
     let extraShift = 0;
 
     for (let i = 0; i < node.children.length; i++) {
       const child = node.children[i]!;
+
+      // ── Reset shift at page-break boundaries ──────────────
+      // A page-break-before: always forces a fresh page context.
+      // Thead-repeat shifts from previous multi-page tables must NOT
+      // cascade across forced page breaks — the content after the break
+      // is on a new page and unrelated to the prior table layout.
+      const breakBefore =
+        child.styles['page-break-before'] || child.styles['break-before'];
+      if ((breakBefore === 'always' || breakBefore === 'page') && extraShift > 0) {
+        extraShift = 0;
+      }
 
       // Apply accumulated shift from preceding table siblings
       if (extraShift > 0) {
@@ -361,14 +665,34 @@ export function applyTheadRepeatShift(root: LayoutNode): void {
         const tbody = child.children.find(c => c.tagName === 'tbody');
 
         if (thead && tbody && tbody.children.length > 0) {
+          // Check CSS opt-out: -lynpdf-repeat: none on thead or table
+          const theadRepeat = thead.styles['-lynpdf-repeat'] || child.styles['-lynpdf-repeat'];
+          if (theadRepeat === 'none') {
+            // Skip thead-repeat shift entirely
+          } else {
+
           const theadHeight = thead.height;
-          const theadOrigPage = Math.floor(thead.y / PAGE_H);
+          // Use actual thead row positions to determine which pages
+          // already contain thead content (container .y may be stale
+          // after applyPageFlow shifts individual TRs).
+          const theadRows = thead.children.filter(c => c.tagName === 'tr');
+          const theadContentPages = new Set<number>(
+            theadRows.map(r => Math.floor(r.y / PAGE_H)),
+          );
           const lastRow = tbody.children[tbody.children.length - 1]!;
           const lastRowEndPage = Math.floor(
             (lastRow.y + lastRow.height - 1) / PAGE_H,
           );
 
-          if (lastRowEndPage > theadOrigPage) {
+          // Find pages where tbody rows exist but thead content doesn't
+          const tbodyPages = new Set<number>(
+            tbody.children.map(r => Math.floor(r.y / PAGE_H)),
+          );
+          const needsRepeatOnAnyPage = [...tbodyPages].some(
+            p => !theadContentPages.has(p),
+          );
+
+          if (needsRepeatOnAnyPage) {
             // Table spans multiple pages — compute thead-repeat correction.
             // For each continuation page, the renderer pushes tbody rows
             // down by correctShift = max(0, PAGE_MARGIN + theadH - localY).
@@ -376,7 +700,13 @@ export function applyTheadRepeatShift(root: LayoutNode): void {
             // siblings so they don't overlap with the shifted table rows.
             let maxCorrectShift = 0;
 
-            for (let page = theadOrigPage + 1; page <= lastRowEndPage; page++) {
+            // Only process pages that don't already have thead content
+            const minTbodyPage = Math.min(...[...tbodyPages]);
+            const maxTbodyPage = Math.max(...[...tbodyPages]);
+            for (let page = minTbodyPage; page <= maxTbodyPage; page++) {
+              // Skip pages where thead content already exists
+              if (theadContentPages.has(page)) continue;
+
               const rowsOnPage = tbody.children.filter(
                 r => Math.floor(r.y / PAGE_H) === page,
               );
@@ -393,7 +723,7 @@ export function applyTheadRepeatShift(root: LayoutNode): void {
               const localY = firstRow.y - page * PAGE_H;
               const correctShift = Math.max(
                 0,
-                PAGE_MARGIN + theadHeight - localY,
+                pageMargin + theadHeight - localY,
               );
               if (correctShift > maxCorrectShift) {
                 maxCorrectShift = correctShift;
@@ -402,8 +732,26 @@ export function applyTheadRepeatShift(root: LayoutNode): void {
 
             if (maxCorrectShift > 0) {
               extraShift += maxCorrectShift;
+
+              // The renderer also shifts ALL tbody rows on continuation
+              // pages by the same correctShift.  This means the table's
+              // VISUAL bottom in the rendered PDF extends beyond the
+              // layout's actualBottom by maxCorrectShift.  If the next
+              // sibling (after the extraShift is applied) would overlap
+              // with this renderer-adjusted bottom, add extra shift.
+              const tableActBot = actualBottom(child);
+              const rendererVisualBot = tableActBot + maxCorrectShift;
+              if (i + 1 < node.children.length) {
+                const nextSib = node.children[i + 1]!;
+                const nextSibPredY = nextSib.y + extraShift;
+                if (nextSibPredY < rendererVisualBot) {
+                  const overlap = rendererVisualBot - nextSibPredY;
+                  extraShift += overlap;
+                }
+              }
             }
           }
+          } // end of theadRepeat !== 'none'
         }
       }
 
@@ -418,7 +766,8 @@ export function applyTheadRepeatShift(root: LayoutNode): void {
   process(root);
 }
 
-export function applyOrphansWidows(root: LayoutNode): void {
+export function applyOrphansWidows(root: LayoutNode, pageMargin: number = PAGE_MARGIN): void {
+  const CONTENT_H = PAGE_H - pageMargin * 2;
   const process = (node: LayoutNode): number => {
     let extraShift = 0;
 
@@ -449,7 +798,7 @@ export function applyOrphansWidows(root: LayoutNode): void {
           } else if (lineCount < orphans + widows) {
             // Too few lines to satisfy both constraints → push to next page
             if (child.height < CONTENT_H) {
-              const nextPageTop = (startPage + 1) * PAGE_H + PAGE_MARGIN;
+              const nextPageTop = (startPage + 1) * PAGE_H + pageMargin;
               const delta = nextPageTop - child.y;
               shiftSubtree(child, delta);
               extraShift += delta;
@@ -465,7 +814,7 @@ export function applyOrphansWidows(root: LayoutNode): void {
               // Too few lines before the break (orphan violation)
               // Push entire block to next page
               if (child.height < CONTENT_H) {
-                const nextPageTop = (startPage + 1) * PAGE_H + PAGE_MARGIN;
+                const nextPageTop = (startPage + 1) * PAGE_H + pageMargin;
                 const delta = nextPageTop - child.y;
                 shiftSubtree(child, delta);
                 extraShift += delta;
@@ -493,6 +842,55 @@ export function applyOrphansWidows(root: LayoutNode): void {
     }
 
     return extraShift;
+  };
+
+  process(root);
+}
+
+// ─── Page Break Anchoring ──────────────────────────────────────────
+
+/**
+ * Final safety pass: ensure elements with `page-break-before: always`
+ * (or `break-before: page`) sit at exactly `pageMargin` (localY) on
+ * their current page.
+ *
+ * Various passes (thead-repeat, orphans/widows, margin-zone cleanup)
+ * can push these elements DOWN from their intended position.  This pass
+ * detects the drift and shifts the element — and all subsequent
+ * siblings — back UP to the content start of the page.
+ *
+ * This pass is non-recursive: it only processes direct children of each
+ * container (matching the structure that applyPageFlow uses).
+ */
+export function anchorPageBreaks(root: LayoutNode, pageMargin: number = PAGE_MARGIN): void {
+  const process = (node: LayoutNode) => {
+    let compaction = 0;
+
+    for (let i = 0; i < node.children.length; i++) {
+      const child = node.children[i]!;
+
+      // Apply pending compaction
+      if (compaction < 0) {
+        shiftSubtree(child, compaction);
+      }
+
+      const breakBefore =
+        child.styles['page-break-before'] || child.styles['break-before'];
+      if (breakBefore === 'always' || breakBefore === 'page') {
+        const pageIdx = Math.floor(child.y / PAGE_H);
+        const localY = child.y - pageIdx * PAGE_H;
+        if (pageIdx > 0 && localY > pageMargin + 1) {
+          const drift = localY - pageMargin;
+          shiftSubtree(child, -drift);
+          compaction = -drift;
+        }
+      }
+    }
+
+    // Recurse into children
+    for (const child of node.children) {
+      process(child);
+    }
   };
 
   process(root);

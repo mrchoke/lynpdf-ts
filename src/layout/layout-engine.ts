@@ -1,8 +1,9 @@
 import type * as cssTree from 'css-tree'
 import type { Node } from 'yoga-layout'
 import Yoga from 'yoga-layout'
+import { PAGE_MARGIN } from '../constants'
 import { TextMeasurer } from '../text/text-measurer'
-import { applyMarginZoneCleanup, applyOrphansWidows, applyPageFlow, applyTheadRepeatShift } from './page-break'
+import { anchorPageBreaks, applyMarginZoneCleanup, applyOrphansWidows, applyPageFlow, applyTheadRepeatShift, compactSiblingGaps, compactTableRowGaps, fixTableRowPositions } from './page-break'
 import type { FontFaceRule, PageRule } from './style-resolver'
 import { StyleResolver } from './style-resolver'
 import { YogaMapper } from './yoga-mapper'
@@ -25,9 +26,27 @@ export interface LayoutResult {
   rootNode: LayoutNode;
   pageRules: PageRule[];
   fontFaceRules: FontFaceRule[];
+  /** Resolved page margin in points (from @page { margin } or default 50pt) */
+  pageMargin: number;
 }
 
 export class LayoutEngine {
+  /**
+   * Parse a CSS length value (e.g., '0.5in', '36pt', '1cm', '12mm', '16px') to points.
+   */
+  static parseCssLength(raw: string): number {
+    const trimmed = raw.trim();
+    const val = parseFloat(trimmed);
+    if (isNaN(val)) return PAGE_MARGIN;
+    if (trimmed.endsWith('in')) return val * 72;
+    if (trimmed.endsWith('cm')) return val * 28.3465;
+    if (trimmed.endsWith('mm')) return val * 2.83465;
+    if (trimmed.endsWith('pt')) return val;
+    if (trimmed.endsWith('px')) return val * 0.75;
+    // bare number → treat as points
+    return val;
+  }
+
   /**
    * Resolve the font file path from CSS styles (font-weight, font-style).
    * Matches the rendering font so layout measurement is accurate.
@@ -50,13 +69,25 @@ export class LayoutEngine {
   static calculate(dom: any, styles: cssTree.CssNode): LayoutResult {
     const styleResolver = new StyleResolver(styles);
     const textMeasurer = new TextMeasurer('fonts/Sarabun-Regular.ttf');
+
+    // ── Resolve @page margin ──────────────────────────────────
+    // Look for @page { margin: ... } in the CSS and convert it to points.
+    // Falls back to the default 50pt if not specified.
+    let pageMargin = PAGE_MARGIN; // default from constants
+    const pageRules = styleResolver.getPageRules();
+    for (const rule of pageRules) {
+      if (rule.declarations['margin']) {
+        const raw = rule.declarations['margin'];
+        pageMargin = LayoutEngine.parseCssLength(raw);
+      }
+    }
     
     const rootYogaNode = Yoga.Node.create();
     rootYogaNode.setWidth(595.28); // A4 width in points
     // NOTE: No setHeight — let the document grow to whatever height content needs.
     // The renderer maps Y coordinates to PDF pages by dividing by pageHeight.
     rootYogaNode.setFlexDirection(Yoga.FLEX_DIRECTION_COLUMN);
-    rootYogaNode.setPadding(Yoga.EDGE_ALL, 50); // 50pt page margin
+    rootYogaNode.setPadding(Yoga.EDGE_ALL, pageMargin);
 
     interface CustomNode {
       yogaNode: Node;
@@ -81,7 +112,7 @@ export class LayoutEngine {
       cellIndex: number;
     }
 
-    const traverse = (node: any, parentCustomNode: CustomNode, inheritedStyles: Record<string, string>, parentIsRow: boolean = false, ancestorChain: Array<{tagName: string, classes: string[], id?: string}> = [], tableRowCounter?: { count: number }, tableInfo?: TableColumnInfo) => {
+    const traverse = (node: any, parentCustomNode: CustomNode, inheritedStyles: Record<string, string>, parentIsRow: boolean = false, ancestorChain: Array<{tagName: string, classes: string[], id?: string}> = [], tableRowCounter?: { count: number }, tableInfo?: TableColumnInfo, elementIndex?: number, siblingCount?: number) => {
       if (node.nodeName === '#text') {
         const text = node.value.trim();
         if (text) {
@@ -183,7 +214,7 @@ export class LayoutEngine {
         const classes = classAttr ? classAttr.value.split(' ') : [];
         const id = idAttr ? idAttr.value : undefined;
 
-        const nodeStyles = styleResolver.resolve(tagName, classes, id, ancestorChain);
+        const nodeStyles = styleResolver.resolve(tagName, classes, id, ancestorChain, elementIndex, siblingCount);
 
         // Build the ancestor chain for children
         const childAncestorChain = [...ancestorChain, { tagName, classes, id }];
@@ -221,6 +252,11 @@ export class LayoutEngine {
           // Don't force width:100% on absolutely positioned divs
           if (!parentIsRow && currentStyles['position'] !== 'absolute') {
             currentStyles['width'] = currentStyles['width'] || '100%';
+          } else if (parentIsRow && !currentStyles['width'] && !currentStyles['flex'] && !currentStyles['flex-grow']) {
+            // In flex-row containers, block children should grow to fill available space
+            currentStyles['flex-grow'] = '1';
+            currentStyles['flex-shrink'] = '1';
+            currentStyles['flex-basis'] = currentStyles['flex-basis'] || '0%';
           }
         } else if (tagName === 'h1') {
           currentStyles['font-size'] = currentStyles['font-size'] || '24px';
@@ -306,11 +342,13 @@ export class LayoutEngine {
             currentStyles['flex-grow'] = currentStyles['flex-grow'] || '0';
             currentStyles['flex-shrink'] = currentStyles['flex-shrink'] || '0';
           } else {
-            // Cell has no explicit width — share remaining space equally.
-            // flex-basis: 0 ensures all auto-width cells get equal widths
-            // regardless of content, like table-layout: fixed.
-            currentStyles['flex'] = currentStyles['flex'] || colspan.toString();
-            currentStyles['flex-basis'] = currentStyles['flex-basis'] || '0px';
+            // Cell has no explicit width — distribute space equally via flex.
+            // flex-basis: 0% with flex-grow ensures all cells get equal base
+            // widths (like table-layout: fixed). colspan cells get wider share.
+            // Text wrapping happens naturally within the constrained cell width.
+            currentStyles['flex-grow'] = currentStyles['flex-grow'] || colspan.toString();
+            currentStyles['flex-shrink'] = currentStyles['flex-shrink'] || '1';
+            currentStyles['flex-basis'] = currentStyles['flex-basis'] || '0%';
           }
           
           if (tagName === 'th') {
@@ -355,6 +393,19 @@ export class LayoutEngine {
           currentStyles['display'] = currentStyles['display'] || 'flex';
           currentStyles['flex-direction'] = currentStyles['flex-direction'] || 'row';
           currentStyles['flex-wrap'] = currentStyles['flex-wrap'] || 'wrap';
+        } else if (['header', 'footer', 'main', 'section', 'article', 'aside', 'nav', 'figure', 'figcaption', 'blockquote', 'address', 'hgroup'].includes(tagName)) {
+          // HTML5 semantic elements — treat like div
+          if (!currentStyles['display']) {
+            currentStyles['display'] = 'flex';
+            currentStyles['flex-direction'] = 'column';
+          }
+          if (!parentIsRow && currentStyles['position'] !== 'absolute') {
+            currentStyles['width'] = currentStyles['width'] || '100%';
+          } else if (parentIsRow && !currentStyles['width'] && !currentStyles['flex'] && !currentStyles['flex-grow']) {
+            currentStyles['flex-grow'] = '1';
+            currentStyles['flex-shrink'] = '1';
+            currentStyles['flex-basis'] = currentStyles['flex-basis'] || '0%';
+          }
         } else if (tagName === 'br') {
           // BR is a zero-size element; the renderer will handle it as a newline
           currentStyles['width'] = '0px';
@@ -373,7 +424,7 @@ export class LayoutEngine {
         }
 
         // Only add to parent if it's a visible block
-        if (['body', 'div', 'p', 'h1', 'h2', 'h3', 'span', 'strong', 'b', 'em', 'i', 'br', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'img', 'svg', 'ul', 'ol', 'li', 'a'].includes(tagName)) {
+        if (['body', 'div', 'p', 'h1', 'h2', 'h3', 'span', 'strong', 'b', 'em', 'i', 'br', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'img', 'svg', 'ul', 'ol', 'li', 'a', 'header', 'footer', 'main', 'section', 'article', 'aside', 'nav', 'figure', 'figcaption', 'blockquote', 'address', 'hgroup'].includes(tagName)) {
            parentCustomNode.yogaNode.insertChild(blockYogaNode, parentCustomNode.yogaNode.getChildCount());
            
            let content = undefined;
@@ -398,6 +449,10 @@ export class LayoutEngine {
              let liIndex = 1;
              let childRowIndex = 0;
 
+             // Compute element sibling count for :first-child/:last-child support
+             const elementChildren = node.childNodes.filter((c: any) => c.nodeName && !c.nodeName.startsWith('#'));
+             const totalElementChildren = elementChildren.length;
+
              // Check if this is an inline container with <br> that needs line splitting
              const hasBr = node.childNodes.some((c: any) => c.nodeName === 'br');
              const isInlineContainer = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName);
@@ -414,6 +469,7 @@ export class LayoutEngine {
                }
                // Override to column to stack lines
                blockYogaNode.setFlexDirection(Yoga.FLEX_DIRECTION_COLUMN);
+               let elIdx = 0;
                for (const lineChildren of lines) {
                  if (lineChildren.length === 0) continue;
                  const lineYogaNode = Yoga.Node.create();
@@ -428,12 +484,14 @@ export class LayoutEngine {
                  };
                  customNode.children.push(lineCustomNode);
                  for (const child of lineChildren) {
-                   traverse(child, lineCustomNode, currentStyles, true, childAncestorChain, tableRowCounter, tableInfo);
+                   const childElIdx = (child.nodeName && !child.nodeName.startsWith('#')) ? elIdx++ : undefined;
+                   traverse(child, lineCustomNode, currentStyles, true, childAncestorChain, tableRowCounter, tableInfo, childElIdx, totalElementChildren);
                  }
                }
              } else {
                const isRow = currentStyles['display'] === 'flex' && (currentStyles['flex-direction'] === 'row' || !currentStyles['flex-direction']);
                let cellIndex = 0;
+               let elIdx = 0;
                for (const child of node.childNodes) {
                  if (child.nodeName === 'li') {
                    child._listIndex = liIndex++;
@@ -446,7 +504,8 @@ export class LayoutEngine {
                    child._cellIndex = cellIndex++;
                    child._rowIndex = node._rowIndex;
                  }
-                 traverse(child, customNode, currentStyles, isRow, childAncestorChain, tableRowCounter, tableInfo);
+                 const childElIdx = (child.nodeName && !child.nodeName.startsWith('#')) ? elIdx++ : undefined;
+                 traverse(child, customNode, currentStyles, isRow, childAncestorChain, tableRowCounter, tableInfo, childElIdx, totalElementChildren);
                }
                // After processing a <tr>'s children, mark first row as done
                // so subsequent rows apply (rather than capture) column widths.
@@ -513,8 +572,15 @@ export class LayoutEngine {
     // Post-layout pass: normalize table column widths.
     // Yoga computes each flex-row independently, so thead and tbody cells
     // may end up with different widths.  This pass forces all rows within a
-    // table to share the same column-width distribution derived from the
-    // computed widths of the first (reference) row.
+    // table to share the same column-width distribution, supporting colspan.
+    //
+    // Strategy:
+    //   1. Find the "base row" — the row with the highest number of cells
+    //      (excluding colspan-expanded cells) which defines individual column widths.
+    //   2. Build a column-width array from the base row.
+    //   3. For each other row, reposition cells:
+    //      - Normal cells get the width of their corresponding column.
+    //      - Colspan cells get the sum of the spanned columns' widths.
     const normalizeTableColumns = (node: LayoutNode) => {
       if (node.tagName === 'table') {
         // Collect all rows across thead/tbody/tfoot
@@ -529,30 +595,90 @@ export class LayoutEngine {
           }
         }
 
-        if (allRows.length >= 2) {
-          // Use the first row as the reference for column widths
-          const refRow = allRows[0]!;
-          const refCells = refRow.children.filter(c => c.tagName === 'td' || c.tagName === 'th');
-          if (refCells.length > 0) {
-            const colWidths = refCells.map(c => c.width);
+        if (allRows.length < 1) {
+          for (const child of node.children) normalizeTableColumns(child);
+          return;
+        }
 
-            // Apply reference widths to all subsequent rows
-            for (let ri = 1; ri < allRows.length; ri++) {
-              const row = allRows[ri]!;
-              const cells = row.children.filter(c => c.tagName === 'td' || c.tagName === 'th');
-              if (cells.length !== colWidths.length) continue; // column count mismatch → skip
+        // Determine the logical column count for each row (accounting for colspan)
+        const getLogicalColCount = (row: LayoutNode): number => {
+          let count = 0;
+          for (const cell of row.children) {
+            if (cell.tagName === 'td' || cell.tagName === 'th') {
+              const cs = parseInt(cell.attrs?.['colspan'] || '1', 10);
+              count += Math.max(1, cs);
+            }
+          }
+          return count;
+        };
 
-              let xOffset = row.x;
-              for (let ci = 0; ci < cells.length; ci++) {
-                const cell = cells[ci]!;
-                const targetWidth = colWidths[ci]!;
-                const dx = xOffset - cell.x;
-                // Shift cell and all its descendants to the correct X position
-                if (dx !== 0) shiftSubtreeX(cell, dx);
-                cell.width = targetWidth;
-                xOffset += targetWidth;
+        // Find the maximum logical column count across all rows
+        const maxCols = Math.max(...allRows.map(getLogicalColCount));
+        if (maxCols === 0) {
+          for (const child of node.children) normalizeTableColumns(child);
+          return;
+        }
+
+        // Find the "base row" — the row that has `maxCols` cells each with colspan=1.
+        // This row defines individual column widths.
+        // If no such row exists, find the row with the most physical cells and expand.
+        let baseRow: LayoutNode | null = null;
+        for (const row of allRows) {
+          const cells = row.children.filter(c => c.tagName === 'td' || c.tagName === 'th');
+          const allSingleSpan = cells.every(c => parseInt(c.attrs?.['colspan'] || '1', 10) === 1);
+          if (allSingleSpan && cells.length === maxCols) {
+            baseRow = row;
+            break;
+          }
+        }
+
+        // Build individual column widths from the base row
+        let colWidths: number[];
+        if (baseRow) {
+          const baseCells = baseRow.children.filter(c => c.tagName === 'td' || c.tagName === 'th');
+          colWidths = baseCells.map(c => c.width);
+        } else {
+          // No row with all single-span = maxCols cells.
+          // Distribute the table content width equally across maxCols columns.
+          const tableWidth = node.width;
+          const colW = tableWidth / maxCols;
+          colWidths = Array(maxCols).fill(colW);
+        }
+
+        // Apply column widths to all rows
+        for (const row of allRows) {
+          const cells = row.children.filter(c => c.tagName === 'td' || c.tagName === 'th');
+          const logicalCount = getLogicalColCount(row);
+          if (logicalCount !== maxCols && logicalCount > 0) {
+            // Row doesn't match expected column count — try to handle
+            // as best we can; might be a malformed table.
+          }
+
+          let colIdx = 0;
+          let xOffset = row.x;
+          for (const cell of cells) {
+            const cs = Math.max(1, parseInt(cell.attrs?.['colspan'] || '1', 10));
+            // Calculate target width as sum of spanned columns
+            let targetWidth = 0;
+            for (let c = 0; c < cs && (colIdx + c) < colWidths.length; c++) {
+              targetWidth += colWidths[colIdx + c]!;
+            }
+            // If we don't have enough column info, use the cell's own width
+            if (targetWidth <= 0) targetWidth = cell.width;
+
+            const dx = xOffset - cell.x;
+            if (dx !== 0) shiftSubtreeX(cell, dx);
+            cell.width = targetWidth;
+
+            // Also resize text children to match new cell width
+            for (const child of cell.children) {
+              if (child.type === 'text') {
+                child.width = Math.max(0, targetWidth - (cell.styles['padding-left'] ? parseFloat(cell.styles['padding-left']) : 0) - (cell.styles['padding-right'] ? parseFloat(cell.styles['padding-right']) : 0));
               }
             }
+
+            xOffset += targetWidth;
+            colIdx += cs;
           }
         }
       }
@@ -569,17 +695,39 @@ export class LayoutEngine {
 
     // Post-layout pass: comprehensive page flow
     // (page-break-before/after, margin enforcement, row integrity, break-inside)
-    applyPageFlow(rootLayout);
+    applyPageFlow(rootLayout, pageMargin);
 
     // Post-layout pass: orphans / widows
-    applyOrphansWidows(rootLayout);
+    applyOrphansWidows(rootLayout, pageMargin);
 
     // Post-layout pass: shift content after multi-page tables with repeated thead
-    applyTheadRepeatShift(rootLayout);
+    applyTheadRepeatShift(rootLayout, pageMargin);
 
     // Lightweight cleanup: fix header/footer zone violations caused by
     // orphans/widows or thead-repeat shifts without re-applying complex rules.
-    applyMarginZoneCleanup(rootLayout);
+    applyMarginZoneCleanup(rootLayout, pageMargin);
+
+    // Compact stale page-break gaps inside table rows.
+    compactTableRowGaps(rootLayout, pageMargin);
+
+    // Fix rows in header zones or straddling page boundaries.
+    fixTableRowPositions(rootLayout, pageMargin);
+
+    // Compact stale same-page gaps between siblings created by the
+    // interaction of applyPageFlow zone pushes + theadRepeatShift.
+    compactSiblingGaps(rootLayout, pageMargin);
+
+    // Final cleanup: re-run zone/row fixes after sibling compaction.
+    applyMarginZoneCleanup(rootLayout, pageMargin);
+    fixTableRowPositions(rootLayout, pageMargin);
+    // Second compaction pass: the cleanup may have shifted elements,
+    // creating new same-page gaps.
+    compactSiblingGaps(rootLayout, pageMargin);
+
+    // Final anchor pass: ensure page-break-before: always elements sit
+    // at exactly pageMargin on their current page, fixing any residual
+    // drift from thead-repeat or other cascading shifts.
+    anchorPageBreaks(rootLayout, pageMargin);
 
     // Free Yoga nodes to prevent memory leaks
     rootYogaNode.freeRecursive();
@@ -587,7 +735,8 @@ export class LayoutEngine {
     return {
       rootNode: rootLayout,
       pageRules: styleResolver.getPageRules(),
-      fontFaceRules: styleResolver.getFontFaceRules()
+      fontFaceRules: styleResolver.getFontFaceRules(),
+      pageMargin
     };
   }
 }

@@ -148,7 +148,7 @@ export class PDFCreator {
       },
     }
     const renderer = new PDFRenderer()
-    await renderer.render(layoutResult.rootNode, outputPath, layoutResult.pageRules, renderOpts, layoutResult.fontFaceRules)
+    await renderer.render(layoutResult.rootNode, outputPath, layoutResult.pageRules, renderOpts, layoutResult.fontFaceRules, layoutResult.pageMargin)
 
     const elapsed = performance.now() - t0
     const pages = Math.ceil(layoutResult.rootNode.height / 841.89)

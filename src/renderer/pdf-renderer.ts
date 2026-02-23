@@ -531,7 +531,7 @@ export class PDFRenderer {
     return 'fonts/Sarabun-Regular.ttf';
   }
 
-  async render(layout: LayoutNode, outputPath: string, pageRules: PageRule[] = [], options: RenderOptions = {}, fontFaceRules: FontFaceRule[] = []): Promise<void> {
+  async render(layout: LayoutNode, outputPath: string, pageRules: PageRule[] = [], options: RenderOptions = {}, fontFaceRules: FontFaceRule[] = [], pageMargin: number = PAGE_MARGIN): Promise<void> {
     // Shared TextMeasurer for pre-wrapping Thai text in the renderer
     const textMeasurer = new TextMeasurer('fonts/Sarabun-Regular.ttf');
 
@@ -576,6 +576,7 @@ export class PDFRenderer {
       theadNode: LayoutNode;
       theadHeight: number;
       tableX: number;
+      theadContentPages: Set<number>;
     }
     interface TfootInfo {
       tfootNode: LayoutNode;
@@ -588,8 +589,21 @@ export class PDFRenderer {
       if (node.tagName === 'table') {
         const thead = node.children.find(c => c.tagName === 'thead');
         if (thead) {
-          const theadHeight = thead.height;
-          tableTheadMap.set(node, { theadNode: thead, theadHeight, tableX: node.x });
+          // Check CSS opt-out: -lynpdf-repeat: none on thead or table
+          const theadRepeat = thead.styles['-lynpdf-repeat'] || node.styles['-lynpdf-repeat'];
+          if (theadRepeat !== 'none') {
+            const theadHeight = thead.height;
+            // Compute which pages actually contain thead rows (after page-break
+            // shifts the container y may be stale — use first TR's position).
+            const theadRows = thead.children.filter(c => c.tagName === 'tr');
+            const theadContentPages = new Set<number>(
+              theadRows.map(r => Math.floor(r.y / PAGE_H)),
+            );
+            tableTheadMap.set(node, {
+              theadNode: thead, theadHeight, tableX: node.x,
+              theadContentPages,
+            });
+          }
         }
         const tfoot = node.children.find(c => c.tagName === 'tfoot');
         if (tfoot) {
@@ -1011,8 +1025,10 @@ export class PDFRenderer {
                 rendered = new Set<number>();
                 theadRenderedPages.set(tableNode, rendered);
               }
-              const theadOrigPage = Math.floor(info.theadNode.y / PAGE_H);
-              if (nodePageIndex !== theadOrigPage && !rendered.has(nodePageIndex)) {
+              // Use actual thead row positions (not container .y which may
+              // be stale after page-break shifts) to decide if a repeat is needed.
+              const theadAlreadyOnThisPage = info.theadContentPages.has(nodePageIndex);
+              if (!theadAlreadyOnThisPage && !rendered.has(nodePageIndex)) {
                 // Check if there are any meaningful data rows on this page
                 // beyond just the current row. If this is the last tbody row
                 // and only marginally overflows, don't render thead on an
@@ -1029,16 +1045,16 @@ export class PDFRenderer {
 
                 rendered.add(nodePageIndex);
                 // Draw thead at the top margin of this page
-                const theadTargetY = nodePageIndex * PAGE_H + PAGE_MARGIN;
+                const theadTargetY = nodePageIndex * PAGE_H + pageMargin;
                 const offsetX = info.tableX - info.theadNode.x;
                 const offsetY = theadTargetY - info.theadNode.y;
                 drawSubtreeOffset(info.theadNode, offsetX, offsetY, nodePageIndex);
 
                 // Compute shift: push content below the repeated thead
                 // The first TR's original localY might be near 0 (just overflowed).
-                // We need all content to start at PAGE_MARGIN + theadHeight.
+                // We need all content to start at pageMargin + theadHeight.
                 const localYWithoutShift = node.y - nodePageIndex * PAGE_H;
-                const correctShift = Math.max(0, PAGE_MARGIN + info.theadHeight - localYWithoutShift);
+                const correctShift = Math.max(0, pageMargin + info.theadHeight - localYWithoutShift);
 
                 let shifts = theadShiftMap.get(tableNode);
                 if (!shifts) {
@@ -1073,7 +1089,7 @@ export class PDFRenderer {
                   if (nodePageIndex !== tfootOrigPage && !tfRendered.has(nodePageIndex)) {
                     tfRendered.add(nodePageIndex);
                     // Draw tfoot at the bottom of the current page
-                    const tfootTargetY = (nodePageIndex + 1) * PAGE_H - PAGE_MARGIN - tfInfo.tfootHeight;
+                    const tfootTargetY = (nodePageIndex + 1) * PAGE_H - pageMargin - tfInfo.tfootHeight;
                     const offsetX = tfInfo.tableX - tfInfo.tfootNode.x;
                     const offsetY = tfootTargetY - tfInfo.tfootNode.y;
                     drawSubtreeOffset(tfInfo.tfootNode, offsetX, offsetY, nodePageIndex);
@@ -1087,6 +1103,37 @@ export class PDFRenderer {
 
         const theadShift = getTheadShift(node, nodePageIndex);
         const localY = node.y - nodePageIndex * PAGE_H + theadShift;
+
+        // ── Overflow: hidden clipping (applied BEFORE rotation) ──
+        // Clip elements with explicit overflow:hidden in
+        // the unrotated coordinate space so the clip rect is correct.
+        // Table cells rely on proper Yoga layout + text wrapping instead
+        // of hard clipping, so content can display fully.
+        const hasOverflowHidden = node.styles['overflow'] === 'hidden';
+        if (hasOverflowHidden) {
+          doc.save();
+          doc.rect(node.x, localY, node.width, node.height).clip();
+        }
+
+        // ── transform: rotate() support ───────────────────────
+        // Parse CSS transform for rotation and apply PDFKit graphics state rotation.
+        // The rotation is around the center of the element's bounding box.
+        const transformStr = node.styles['transform'];
+        let rotationDeg = 0;
+        if (transformStr) {
+          const rotateMatch = transformStr.match(/rotate\(\s*(-?[\d.]+)\s*deg\s*\)/);
+          if (rotateMatch) {
+            rotationDeg = parseFloat(rotateMatch[1]!);
+          }
+        }
+        const hasRotation = rotationDeg !== 0;
+        if (hasRotation) {
+          doc.save();
+          // Rotate around the center of the element
+          const cx = node.x + node.width / 2;
+          const cy = localY + node.height / 2;
+          doc.rotate(rotationDeg, { origin: [cx, cy] });
+        }
 
         // Register named destination for elements with id (internal link targets)
         if (node.attrs && node.attrs['id']) {
@@ -1334,14 +1381,7 @@ export class PDFRenderer {
         }
 
         // ── Overflow: hidden clipping ────────────────────────
-        // Also clip table cells (td/th) to prevent text from overflowing
-        // into adjacent cells when content is wider than the cell.
-        const isTableCell = node.tagName === 'td' || node.tagName === 'th';
-        const hasOverflowHidden = node.styles['overflow'] === 'hidden' || isTableCell;
-        if (hasOverflowHidden) {
-          doc.save();
-          doc.rect(node.x, localY, node.width, node.height).clip();
-        }
+        // (Moved before rotation — see above)
 
         if (node.children) {
           for (const child of node.children) {
@@ -1349,6 +1389,12 @@ export class PDFRenderer {
           }
         }
 
+        // Close transform rotation (must be before clip restore)
+        if (hasRotation) {
+          doc.restore();
+        }
+
+        // Close overflow clipping
         if (hasOverflowHidden) {
           doc.restore();
         }
@@ -1390,7 +1436,7 @@ export class PDFRenderer {
         if (activeRule && activeRule.marginBoxes) {
           const pageWidth = doc.page.width;
           const pageHeight = doc.page.height;
-          const margin = 50; // Default margin
+          const margin = pageMargin; // Dynamic @page margin
 
           // Clear header/footer zones with white background so content
           // that bleeds into these areas is hidden before we draw headers/footers.

@@ -115,8 +115,10 @@ export class StyleResolver {
     classes: string[],
     id?: string,
     ancestors: Array<{ tagName: string; classes: string[]; id?: string }> = [],
+    elementIndex?: number,
+    siblingCount?: number,
   ): Record<string, string> {
-    const currentEl = { tagName, classes, id };
+    const currentEl = { tagName, classes, id, elementIndex, siblingCount };
     const fullChain = [...ancestors, currentEl];
     const styles: Record<string, string> = {};
 
@@ -175,14 +177,15 @@ export class StyleResolver {
     return parts;
   }
 
-  /** Check whether a simple selector (tag, .class, #id, combos) matches one element. */
-  private matchSimple(sel: string, el: { tagName: string; classes: string[]; id?: string }): boolean {
+  /** Check whether a simple selector (tag, .class, #id, :pseudo, combos) matches one element. */
+  private matchSimple(sel: string, el: { tagName: string; classes: string[]; id?: string; elementIndex?: number; siblingCount?: number }): boolean {
     if (sel === '*') return true;
 
     let remaining = sel;
     let requiredTag = '';
     const requiredClasses: string[] = [];
     let requiredId = '';
+    const pseudoClasses: string[] = [];
 
     // Optional leading tag name
     const tagMatch = remaining.match(/^[a-zA-Z][a-zA-Z0-9]*/);
@@ -199,12 +202,37 @@ export class StyleResolver {
     const idFrag = remaining.match(/#([a-zA-Z_-][a-zA-Z0-9_-]*)/);
     if (idFrag) requiredId = idFrag[1] ?? '';
 
-    if (!requiredTag && requiredClasses.length === 0 && !requiredId) return false;
+    // :pseudo-class fragments (e.g. :first-child, :last-child, :nth-child(n))
+    const pseudoFrags = remaining.match(/:[\w-]+(\([^)]*\))?/g) || [];
+    for (const p of pseudoFrags) pseudoClasses.push(p);
+
+    if (!requiredTag && requiredClasses.length === 0 && !requiredId && pseudoClasses.length === 0) return false;
     if (requiredTag && requiredTag !== el.tagName) return false;
     for (const cls of requiredClasses) {
       if (!el.classes.includes(cls)) return false;
     }
     if (requiredId && el.id !== requiredId) return false;
+
+    // Evaluate pseudo-classes
+    for (const pseudo of pseudoClasses) {
+      if (pseudo === ':first-child') {
+        if (el.elementIndex === undefined || el.elementIndex !== 0) return false;
+      } else if (pseudo === ':last-child') {
+        if (el.elementIndex === undefined || el.siblingCount === undefined || el.elementIndex !== el.siblingCount - 1) return false;
+      } else if (pseudo.startsWith(':nth-child(')) {
+        const nthMatch = pseudo.match(/:nth-child\(\s*(\d+)\s*\)/);
+        if (nthMatch) {
+          const n = parseInt(nthMatch[1]!, 10) - 1; // CSS is 1-based, our index is 0-based
+          if (el.elementIndex === undefined || el.elementIndex !== n) return false;
+        } else {
+          // Complex :nth-child expressions (an+b) — skip, don't match
+          return false;
+        }
+      } else {
+        // Unsupported pseudo-class — don't match
+        return false;
+      }
+    }
 
     return true;
   }
@@ -216,7 +244,7 @@ export class StyleResolver {
   private matchRemainingParts(
     parts: Array<{ sel: string; comb: ' ' | '>' | null }>,
     partIdx: number,
-    ancestors: Array<{ tagName: string; classes: string[]; id?: string }>,
+    ancestors: Array<{ tagName: string; classes: string[]; id?: string; elementIndex?: number; siblingCount?: number }>,
     startAncestorIdx: number,
   ): boolean {
     if (partIdx < 0) return true; // All parts matched
@@ -248,7 +276,7 @@ export class StyleResolver {
 
   private selectorMatchesChain(
     selector: string,
-    fullChain: Array<{ tagName: string; classes: string[]; id?: string }>,
+    fullChain: Array<{ tagName: string; classes: string[]; id?: string; elementIndex?: number; siblingCount?: number }>,
   ): boolean {
     if (!fullChain.length) return false;
     const currentEl = fullChain[fullChain.length - 1]!;
