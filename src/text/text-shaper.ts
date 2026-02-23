@@ -1,4 +1,4 @@
-import * as fs from 'fs'
+import * as fs from 'fs';
 
 /**
  * HarfBuzz-based text shaper for proper glyph positioning.
@@ -159,5 +159,63 @@ export class TextShaper {
     if (glyphs.length === 0) return false;
     // At least some glyphs should have non-zero dy (mark positioning)
     return glyphs.some(g => g.dy !== 0 || g.dx !== 0);
+  }
+
+  // ─── Cluster-based segmentation for Thai justification ──────────
+
+  /** Intl.Segmenter for grapheme cluster splitting (fallback) */
+  private static graphemeSegmenter = new Intl.Segmenter('th', { granularity: 'grapheme' });
+
+  /**
+   * Split text into segments at HarfBuzz cluster boundaries.
+   *
+   * Each segment keeps a base consonant together with its combining marks
+   * (สระลอย, วรรณยุกต์) — essential for Thai justification so that extra
+   * space is distributed between visual character units rather than between
+   * words (which are few in Thai and produce ugly wide gaps).
+   *
+   * Falls back to Unicode grapheme cluster segmentation when HarfBuzz is
+   * not available.
+   *
+   * @param text  The text to segment.
+   * @param fontPath  Path to the font file.
+   * @param fontSize  Font size in points.
+   * @returns Array of text segments (each = one cluster).
+   */
+  static getClusterSegments(text: string, fontPath: string, fontSize: number): string[] {
+    const glyphs = TextShaper.shapeText(text, fontPath, fontSize);
+    if (glyphs.length === 0) {
+      // Fallback: use Unicode grapheme cluster segmentation
+      return TextShaper.getGraphemeSegments(text);
+    }
+
+    // Collect unique cluster start indices, preserving first-seen order
+    const seen = new Set<number>();
+    const clusterStarts: number[] = [];
+    for (const g of glyphs) {
+      if (!seen.has(g.cl)) {
+        seen.add(g.cl);
+        clusterStarts.push(g.cl);
+      }
+    }
+    // Sort ascending for LTR Thai text
+    clusterStarts.sort((a, b) => a - b);
+
+    const segments: string[] = [];
+    for (let i = 0; i < clusterStarts.length; i++) {
+      const start = clusterStarts[i]!;
+      const end = i + 1 < clusterStarts.length ? clusterStarts[i + 1]! : text.length;
+      const seg = text.slice(start, end);
+      if (seg) segments.push(seg);
+    }
+    return segments;
+  }
+
+  /**
+   * Fallback: split text into grapheme clusters using Intl.Segmenter.
+   * Produces results very similar to HarfBuzz clusters for Thai script.
+   */
+  static getGraphemeSegments(text: string): string[] {
+    return Array.from(TextShaper.graphemeSegmenter.segment(text)).map(s => s.segment);
   }
 }

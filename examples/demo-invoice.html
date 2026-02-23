@@ -1,322 +1,494 @@
 <!DOCTYPE html>
 <html lang="th">
 <head>
-    <meta charset="UTF-8">
-    <title>Invoice — ใบแจ้งหนี้</title>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-        @page {
-            size: A4;
-            margin: 15mm 20mm;
-            @top-center { content: ""; }
-            @bottom-right { content: ""; }
-            @bottom-left { content: ""; }
-        }
+  <meta charset="UTF-8">
+  <title>Invoice — LynPDF Co., Ltd.</title>
+  <meta name="author" content="LynPDF">
+  <meta name="description" content="ใบแจ้งหนี้ / Invoice — LynPDF Co., Ltd.">
+  <style>
+    @page {
+      size: A4;
+      margin: 10mm 14mm;
+    }
 
-        .invoice-wrapper {
-            font-family: 'Sarabun', sans-serif;
-            color: #333;
-            line-height: 1.2;
-        }
+    body {
+      font-family: 'Sarabun', sans-serif;
+      font-size: 11px;
+      color: #2d2d2d;
+      margin: 0;
+      padding: 0;
+      line-height: 1.3;
+    }
 
-        /* Top bar */
-        .invoice-topbar {
-            background-color: #1a1a2e;
-            padding: 10px 20px;
-            display: flex;
-            flex-direction: row;
-            margin-bottom: 0;
-        }
-        .invoice-topbar-brand { flex: 1; }
-        .invoice-topbar-brand h1 {
-            color: #fff;
-            font-size: 22px;
-            margin: 0 0 2px 0;
-        }
-        .invoice-topbar-brand p {
-            color: #adb5bd;
-            font-size: 12px;
-            margin: 0;
-        }
-        .invoice-topbar-number { flex: 1; text-align: right; }
-        .invoice-topbar-number .inv-label {
-            color: #adb5bd;
-            font-size: 11px;
-        }
-        .invoice-topbar-number .inv-num {
-            color: #fff;
-            font-size: 20px;
-            font-weight: bold;
-        }
-        .invoice-topbar-number .inv-date {
-            color: #adb5bd;
-            font-size: 12px;
-        }
+    /* ═══════════════════════════
+       HEADER BAR
+    ═══════════════════════════ */
+    .inv-header {
+      display: flex;
+      flex-direction: row;
+      background-color: #1a1a2e;
+      padding: 11px 16px;
+    }
+    .inv-brand { flex: 1; }
+    .inv-brand-row {
+      display: flex;
+      flex-direction: row;
+      margin-bottom: 4px;
+    }
+    .inv-brand h1 {
+      color: #ffffff;
+      font-size: 16px;
+      margin: 0 0 1px 0;
+    }
+    .inv-brand .sub {
+      color: #adb5bd;
+      font-size: 9px;
+      margin: 0;
+    }
+    .inv-brand .addr {
+      color: #6c757d;
+      font-size: 9px;
+      margin: 0;
+    }
 
-        /* Parties */
-        .invoice-parties {
-            display: flex;
-            flex-direction: row;
-            padding: 10px 0;
-            border-bottom: 2px solid #dee2e6;
-            margin-bottom: 12px;
-        }
-        .party-block { flex: 1; padding: 0 12px; }
-        .party-block:first-child { padding-left: 0; }
-        .party-label {
-            font-size: 10px;
-            color: #999;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 2px;
-        }
-        .party-name {
-            font-size: 14px;
-            font-weight: bold;
-            color: #1a1a2e;
-            margin-bottom: 2px;
-        }
-        .party-detail {
-            font-size: 11px;
-            color: #555;
-            line-height: 1.3;
-        }
+    .inv-number-block { text-align: right; }
+    .inv-number-block .lbl {
+      color: #adb5bd;
+      font-size: 8px;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+    .inv-number-block .doc-title {
+      color: #e94560;
+      font-size: 20px;
+      font-weight: bold;
+      letter-spacing: 2px;
+    }
+    .inv-number-block .doc-num {
+      color: #ffffff;
+      font-size: 13px;
+      font-weight: bold;
+      margin-top: 1px;
+    }
+    .inv-number-block .doc-date {
+      color: #adb5bd;
+      font-size: 10px;
+      margin-top: 1px;
+    }
+    .inv-number-block .due-badge {
+      display: inline-block;
+      background-color: #e94560;
+      color: #fff;
+      font-size: 9px;
+      font-weight: bold;
+      padding: 2px 6px;
+      border-radius: 8px;
+      margin-top: 3px;
+    }
 
-        /* Invoice table */
-        .inv-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 16px;
-        }
-        .inv-table th {
-            background-color: #1a1a2e;
-            color: #fff;
-            padding: 6px 10px;
-            font-size: 12px;
-            border: none;
-        }
-        .inv-table td {
-            padding: 6px 10px;
-            font-size: 12px;
-            border-bottom: 1px solid #dee2e6;
-        }
-        .inv-table .alt-row td { background-color: #f8f9fa; }
-        .inv-table .subtotal-row td {
-            background-color: #f8f9fa;
-            font-weight: bold;
-            border-top: 1px solid #dee2e6;
-        }
-        .inv-table .grand-total-row td {
-            background-color: #1a1a2e;
-            color: #fff;
-            font-size: 15px;
-            font-weight: bold;
-            border: none;
-        }
+    /* Red accent stripe */
+    .accent-stripe {
+      height: 4px;
+      background-color: #e94560;
+      margin-bottom: 0;
+    }
+    /* Teal secondary stripe */
+    .accent-stripe-2 {
+      height: 2px;
+      background-color: #17a2b8;
+      margin-bottom: 10px;
+    }
 
-        /* Summary block */
-        .invoice-summary {
-            display: flex;
-            flex-direction: row;
-            margin-bottom: 12px;
-        }
-        .summary-notes { flex: 2; padding-right: 16px; }
-        .summary-totals { flex: 1; }
-        .totals-table { width: 100%; }
-        .totals-table td { padding: 3px 6px; font-size: 12px; }
-        .totals-table .label-col { color: #666; }
-        .totals-table .value-col { text-align: right; font-weight: bold; }
-        .totals-table .grand-row td {
-            background-color: #1a1a2e;
-            color: #fff;
-            padding: 6px;
-            font-size: 14px;
-        }
+    /* ═══════════════════════════
+       PARTIES SECTION
+    ═══════════════════════════ */
+    .parties {
+      display: flex;
+      flex-direction: row;
+      margin-bottom: 10px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid #dee2e6;
+    }
+    .party { flex: 1; padding: 0 8px; }
+    .party:first-child { padding-left: 0; }
 
-        /* Payment info */
-        .payment-info {
-            background-color: #f8f9fa;
-            border: 1px solid #dee2e6;
-            padding: 8px 12px;
-            margin-bottom: 8px;
-        }
-        .payment-info h3 {
-            font-size: 14px;
-            color: #1a1a2e;
-            margin: 0 0 8px 0;
-        }
-        .payment-info p {
-            font-size: 12px;
-            color: #555;
-            margin: 2px 0;
-        }
+    .party-lbl {
+      font-size: 7px;
+      font-weight: bold;
+      color: #e94560;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .party-name {
+      font-size: 12px;
+      font-weight: bold;
+      color: #1a1a2e;
+      margin-bottom: 1px;
+    }
+    .party-name-th {
+      font-size: 10px;
+      color: #555;
+      margin-bottom: 1px;
+    }
+    .party-detail {
+      font-size: 10px;
+      color: #666;
+      line-height: 1.5;
+    }
+    .party-divider {
+      width: 1px;
+      background-color: #dee2e6;
+      margin: 0 6px;
+    }
 
-        /* Footer */
-        .invoice-footer {
-            border-top: 1px solid #dee2e6;
-            padding-top: 12px;
-            text-align: center;
-            font-size: 11px;
-            color: #999;
-        }
-    </style>
+    /* ═══════════════════════════
+       INVOICE TABLE
+    ═══════════════════════════ */
+    .inv-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 8px;
+    }
+    .inv-table thead tr {
+      background-color: #1a1a2e;
+    }
+    .inv-table th {
+      color: #fff;
+      padding: 5px 8px;
+      font-size: 11px;
+      border: none;
+      text-align: left;
+    }
+    .inv-table th:first-child { border-radius: 0; }
+    .inv-table td {
+      padding: 5px 8px;
+      font-size: 11px;
+      border-bottom: 1px solid #edf0f2;
+      vertical-align: middle;
+    }
+    .inv-table .alt td { background-color: #f8f9fa; }
+    .inv-table .subtotal-row td {
+      background-color: #f0f0f0;
+      font-weight: bold;
+      border-top: 1px solid #ccc;
+      font-size: 11px;
+    }
+    .inv-table .grand-row td {
+      background-color: #1a1a2e;
+      color: #fff;
+      font-size: 12px;
+      font-weight: bold;
+      border: none;
+      padding: 6px 8px;
+    }
+
+    /* ═══════════════════════════
+       TOTALS (right-aligned)
+    ═══════════════════════════ */
+    .totals-wrap {
+      margin-bottom: 8px;
+    }
+    .totals-col {
+      width: 44%;
+      margin-left: auto;
+    }
+
+    /* Notes / Payment box */
+    .payment-box {
+      background-color: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-left: 4px solid #17a2b8;
+      padding: 7px 10px;
+      margin-bottom: 6px;
+    }
+    .payment-box h4 {
+      font-size: 10px;
+      font-weight: bold;
+      color: #0f3460;
+      margin: 0 0 4px 0;
+    }
+    .payment-box p {
+      font-size: 10px;
+      color: #555;
+      margin: 1px 0;
+      line-height: 1.4;
+    }
+    .remark-box {
+      background-color: #fff8e1;
+      border-left: 3px solid #ffc107;
+      padding: 5px 8px;
+      font-size: 10px;
+      color: #555;
+      line-height: 1.4;
+    }
+
+    /* Totals table */
+    .totals-table { width: 100%; }
+    .totals-table td { padding: 3px 6px; font-size: 11px; }
+    .totals-table .lbl { color: #555; }
+    .totals-table .val { text-align: right; font-weight: bold; color: #1a1a2e; }
+    .totals-table .discount .val { color: #17a2b8; }
+    .totals-table .tax .val { color: #555; }
+    .totals-table .wht .val { color: #dc3545; }
+    .totals-table .sep td {
+      border-bottom: 1px solid #dee2e6;
+      padding-top: 1px;
+      padding-bottom: 1px;
+    }
+    .totals-table .grand td {
+      background-color: #1a1a2e;
+      color: #fff;
+      padding: 6px 6px;
+      font-size: 12px;
+      font-weight: bold;
+      border-top: none;
+    }
+    .totals-table .grand .val { color: #fff; }
+
+    /* ═══════════════════════════
+       SIGNATURE BLOCK
+    ═══════════════════════════ */
+    .sig-section {
+      display: flex;
+      flex-direction: row;
+      margin-bottom: 8px;
+      border-top: 1px solid #dee2e6;
+      padding-top: 8px;
+    }
+    .sig-col { flex: 1; text-align: center; padding: 0 8px; }
+    .sig-line {
+      border-top: 1px solid #aaa;
+      margin: 20px 12px 4px 12px;
+    }
+    .sig-name { font-size: 10px; font-weight: bold; color: #333; margin: 0; }
+    .sig-role { font-size: 9px; color: #888; margin: 0; }
+
+    /* ═══════════════════════════
+       FOOTER
+    ═══════════════════════════ */
+    .inv-footer {
+      border-top: 2px solid #e94560;
+      padding-top: 6px;
+      display: flex;
+      flex-direction: row;
+    }
+    .inv-footer .footer-brand {
+      flex: 1;
+      font-size: 9px;
+      color: #555;
+      font-weight: bold;
+    }
+    .inv-footer .footer-info {
+      flex: 3;
+      text-align: right;
+      font-size: 9px;
+      color: #888;
+    }
+  </style>
 </head>
 <body>
-<div class="invoice-wrapper">
 
-    <!-- Top bar with brand + invoice number -->
-    <div class="invoice-topbar">
-        <div class="invoice-topbar-brand">
-            <h1>ACME Corporation Co., Ltd.</h1>
-            <p>บริษัท แอคมี คอร์ปอเรชั่น จำกัด</p>
+  <!-- ═══════════ HEADER ═══════════ -->
+  <div class="inv-header">
+    <div class="inv-brand">
+      <div class="inv-brand-row">
+        <svg width="32" height="32" viewBox="0 0 100 100" style="margin-right: 8px;">
+          <rect x="4" y="4" width="92" height="92" rx="10" fill="#e94560"/>
+          <rect x="20" y="16" width="42" height="56" rx="3" fill="#fff" opacity="0.92"/>
+          <rect x="27" y="26" width="22" height="2.5" rx="1" fill="#1a1a2e" opacity="0.35"/>
+          <rect x="27" y="33" width="30" height="2.5" rx="1" fill="#1a1a2e" opacity="0.35"/>
+          <rect x="27" y="40" width="26" height="2.5" rx="1" fill="#1a1a2e" opacity="0.35"/>
+          <rect x="27" y="47" width="18" height="2.5" rx="1" fill="#e94560" opacity="0.7"/>
+          <rect x="27" y="54" width="30" height="2.5" rx="1" fill="#1a1a2e" opacity="0.35"/>
+          <rect x="27" y="61" width="22" height="2.5" rx="1" fill="#1a1a2e" opacity="0.35"/>
+          <rect x="54" y="54" width="36" height="28" rx="4" fill="#e94560"/>
+          <text x="72" y="72" text-anchor="middle" font-size="13" font-weight="bold" fill="#fff">PDF</text>
+        </svg>
+        <div>
+          <h1>LynPDF Co., Ltd.</h1>
+          <p class="sub">บริษัท ลินพีดีเอฟ จำกัด</p>
+          <p class="sub">HTML/CSS &rarr; PDF Creator</p>
         </div>
-        <div class="invoice-topbar-number">
-            <div class="inv-label">INVOICE / ใบแจ้งหนี้</div>
-            <div class="inv-num">#INV-2568-0042</div>
-            <div class="inv-date">วันที่: 22 กุมภาพันธ์ 2568</div>
-            <div class="inv-date">ครบกำหนด: 22 มีนาคม 2568</div>
-        </div>
+      </div>
+      <p class="addr">99 อาคาร Innovation Tower ชั้น 14 ถนนสุขุมวิท แขวงคลองเตย กทม. 10110</p>
+      <p class="addr">เลขภาษี: 0105569012345 &nbsp;|&nbsp; โทร: 02-999-8888 &nbsp;|&nbsp; www.lynpdf.dev</p>
     </div>
-
-    <!-- Parties: FROM / TO -->
-    <div class="invoice-parties">
-        <div class="party-block">
-            <div class="party-label">จาก (FROM)</div>
-            <div class="party-name">ACME Corporation Co., Ltd.</div>
-            <div class="party-detail">
-                123 ถนนสุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพฯ 10110<br/>
-                เลขประจำตัวผู้เสียภาษี: 0105566012345 | โทร: 02-123-4567
-            </div>
-        </div>
-        <div class="party-block">
-            <div class="party-label">ถึง (BILL TO)</div>
-            <div class="party-name">บริษัท เทค สตาร์ทอัพ จำกัด</div>
-            <div class="party-detail">
-                456 อาคาร One Bangkok ชั้น 12 ถนนพระราม 4 กรุงเทพฯ 10330<br/>
-                เลขภาษี: 0105566098765 | โครงการ: ERP ระยะที่ 2 (CTR-2568-015)
-            </div>
-        </div>
+    <div class="inv-number-block">
+      <div class="lbl">เอกสาร / Document</div>
+      <div class="doc-title">INVOICE</div>
+      <div class="lbl" style="margin-top:2px;">ใบแจ้งหนี้</div>
+      <div class="doc-num">#INV-2568-0042</div>
+      <div class="doc-date">วันที่: 22 กุมภาพันธ์ 2568</div>
+      <div class="due-badge">ครบกำหนด: 22 มีนาคม 2568</div>
     </div>
+  </div>
+  <div class="accent-stripe"></div>
+  <div class="accent-stripe-2"></div>
 
-    <!-- Line items -->
-    <table class="inv-table">
-        <thead>
-            <tr>
-                <th style="width: 40px">#</th>
-                <th>รายละเอียด</th>
-                <th style="width: 60px; text-align: center">จำนวน</th>
-                <th style="width: 80px; text-align: right">หน่วย</th>
-                <th style="width: 100px; text-align: right">ราคาต่อหน่วย</th>
-                <th style="width: 110px; text-align: right">จำนวนเงิน</th>
-            </tr>
-        </thead>
-        <tbody>
-            <tr>
-                <td>1</td>
-                <td>บริการพัฒนาระบบ ERP — Module จัดซื้อ (160 man-hours)</td>
-                <td style="text-align: center">160</td>
-                <td style="text-align: right">ชม.</td>
-                <td style="text-align: right">800.00</td>
-                <td style="text-align: right">128,000.00</td>
-            </tr>
-            <tr class="alt-row">
-                <td>2</td>
-                <td>บริการพัฒนาระบบ ERP — Module คลังสินค้า (120 man-hours)</td>
-                <td style="text-align: center">120</td>
-                <td style="text-align: right">ชม.</td>
-                <td style="text-align: right">800.00</td>
-                <td style="text-align: right">96,000.00</td>
-            </tr>
-            <tr>
-                <td>3</td>
-                <td>UI/UX Design — Dashboard &amp; Reports (Figma, 40 man-hours)</td>
-                <td style="text-align: center">40</td>
-                <td style="text-align: right">ชม.</td>
-                <td style="text-align: right">1,200.00</td>
-                <td style="text-align: right">48,000.00</td>
-            </tr>
-            <tr class="alt-row">
-                <td>4</td>
-                <td>ค่าบริการ Server Hosting — AWS EC2 + RDS, 12 เดือน</td>
-                <td style="text-align: center">12</td>
-                <td style="text-align: right">เดือน</td>
-                <td style="text-align: right">4,500.00</td>
-                <td style="text-align: right">54,000.00</td>
-            </tr>
-            <tr>
-                <td>5</td>
-                <td>ค่าฝึกอบรมผู้ใช้งาน — 2 วัน × 20 คน</td>
-                <td style="text-align: center">2</td>
-                <td style="text-align: right">วัน</td>
-                <td style="text-align: right">15,000.00</td>
-                <td style="text-align: right">30,000.00</td>
-            </tr>
-        </tbody>
-    </table>
-
-    <!-- Summary + notes row -->
-    <div class="invoice-summary">
-        <div class="summary-notes">
-            <div class="warning-box" style="font-size: 11px; padding: 8px 12px; margin: 0">
-                <strong>การชำระเงิน:</strong> K-Bank บัญชี 123-4-56789-0 ชื่อ บจ. แอคมี คอร์ปอเรชั่น<br/>
-                <strong>หมายเหตุ:</strong> ชำระภายใน 30 วัน — ล่าช้าคิดค่าปรับ 1.5%/เดือน
-            </div>
-        </div>
-        <div class="summary-totals">
-            <table class="totals-table">
-                <tr>
-                    <td class="label-col">ยอดรวม (Subtotal)</td>
-                    <td class="value-col">356,000.00 ฿</td>
-                </tr>
-                <tr>
-                    <td class="label-col">ส่วนลดพิเศษ 5%</td>
-                    <td class="value-col" style="color: #dc3545">-17,800.00 ฿</td>
-                </tr>
-                <tr>
-                    <td class="label-col">ยอดหลังหักส่วนลด</td>
-                    <td class="value-col">338,200.00 ฿</td>
-                </tr>
-                <tr>
-                    <td class="label-col">ภาษีมูลค่าเพิ่ม 7%</td>
-                    <td class="value-col">23,674.00 ฿</td>
-                </tr>
-                <tr>
-                    <td class="label-col">หัก ณ ที่จ่าย 3%</td>
-                    <td class="value-col" style="color: #dc3545">-10,146.00 ฿</td>
-                </tr>
-                <tr class="grand-row">
-                    <td>ยอดชำระสุทธิ</td>
-                    <td style="text-align: right">351,728.00 ฿</td>
-                </tr>
-            </table>
-        </div>
+  <!-- ═══════════ PARTIES ═══════════ -->
+  <div class="parties">
+    <div class="party">
+      <div class="party-lbl">จากผู้ขาย / From</div>
+      <div class="party-name">LynPDF Co., Ltd.</div>
+      <div class="party-name-th">บริษัท ลินพีดีเอฟ จำกัด</div>
+      <div class="party-detail">
+        99 อาคาร Innovation Tower ชั้น 14<br/>
+        ถนนสุขุมวิท แขวงคลองเตย เขตคลองเตย กรุงเทพฯ 10110<br/>
+        เลขประจำตัวผู้เสียภาษี: 0105569012345<br/>
+        โทร: 02-999-8888 &nbsp;|&nbsp; www.lynpdf.dev
+      </div>
     </div>
-
-    <!-- Signature block -->
-    <div class="row" style="margin-bottom: 4px">
-        <div class="col" style="text-align: center; padding: 2px">
-            <div style="border-top: 1px solid #333; margin: 20px 16px 2px 16px"></div>
-            <p style="font-size: 11px; margin: 0">ผู้มีอำนาจลงนาม</p>
-            <p style="font-size: 10px; color: #666; margin: 0">Authorized Signatory</p>
-        </div>
-        <div class="col" style="text-align: center; padding: 2px">
-            <div style="border-top: 1px solid #333; margin: 20px 16px 2px 16px"></div>
-            <p style="font-size: 11px; margin: 0">ผู้รับเอกสาร</p>
-            <p style="font-size: 10px; color: #666; margin: 0">Received By</p>
-        </div>
-        <div class="col" style="text-align: center; padding: 2px">
-            <div style="border-top: 1px solid #333; margin: 20px 16px 2px 16px"></div>
-            <p style="font-size: 11px; margin: 0">ผู้อนุมัติ</p>
-            <p style="font-size: 10px; color: #666; margin: 0">Approved By</p>
-        </div>
+    <div class="party-divider"></div>
+    <div class="party" style="padding-left: 16px;">
+      <div class="party-lbl">ผู้ซื้อ / Bill To</div>
+      <div class="party-name">บริษัท เทค สตาร์ทอัพ จำกัด</div>
+      <div class="party-name-th">Tech Startup Co., Ltd.</div>
+      <div class="party-detail">
+        456 อาคาร One Bangkok ชั้น 12<br/>
+        ถนนพระราม 4 แขวงทุ่งมหาเมฆ เขตสาทร กรุงเทพฯ 10330<br/>
+        เลขภาษี: 0105566098765<br/>
+        โครงการ: ERP ระยะที่ 2 — สัญญา CTR-2568-015
+      </div>
     </div>
+  </div>
 
-    <!-- Footer -->
-    <div class="invoice-footer">
-        บริษัท แอคมี คอร์ปอเรชั่น จำกัด | ทะเบียนเลขที่ 0105566012345 |
-        123 ถนนสุขุมวิท กรุงเทพฯ 10110 | www.acme.co.th
+  <!-- ═══════════ LINE ITEMS ═══════════ -->
+  <table class="inv-table">
+    <thead>
+      <tr>
+        <th style="width: 36px;">#</th>
+        <th>รายละเอียด / Description</th>
+        <th style="width: 55px; text-align: center;">จำนวน</th>
+        <th style="width: 65px; text-align: right;">หน่วย</th>
+        <th style="width: 100px; text-align: right;">ราคา/หน่วย (฿)</th>
+        <th style="width: 110px; text-align: right;">จำนวนเงิน (฿)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>1</td>
+        <td>บริการพัฒนาระบบ ERP — Module จัดซื้อ (160 man-hours)</td>
+        <td style="text-align: center;">160</td>
+        <td style="text-align: right;">ชม.</td>
+        <td style="text-align: right;">800.00</td>
+        <td style="text-align: right;">128,000.00</td>
+      </tr>
+      <tr class="alt">
+        <td>2</td>
+        <td>บริการพัฒนาระบบ ERP — Module คลังสินค้า (120 man-hours)</td>
+        <td style="text-align: center;">120</td>
+        <td style="text-align: right;">ชม.</td>
+        <td style="text-align: right;">800.00</td>
+        <td style="text-align: right;">96,000.00</td>
+      </tr>
+      <tr>
+        <td>3</td>
+        <td>UI/UX Design — Dashboard &amp; Reports (Figma, 40 man-hours)</td>
+        <td style="text-align: center;">40</td>
+        <td style="text-align: right;">ชม.</td>
+        <td style="text-align: right;">1,200.00</td>
+        <td style="text-align: right;">48,000.00</td>
+      </tr>
+      <tr class="alt">
+        <td>4</td>
+        <td>ค่าบริการ Cloud Hosting — AWS EC2 + RDS, 12 เดือน</td>
+        <td style="text-align: center;">12</td>
+        <td style="text-align: right;">เดือน</td>
+        <td style="text-align: right;">4,500.00</td>
+        <td style="text-align: right;">54,000.00</td>
+      </tr>
+      <tr>
+        <td>5</td>
+        <td>ค่าฝึกอบรมผู้ใช้งาน LynPDF — 2 วัน × 20 คน</td>
+        <td style="text-align: center;">2</td>
+        <td style="text-align: right;">วัน</td>
+        <td style="text-align: right;">15,000.00</td>
+        <td style="text-align: right;">30,000.00</td>
+      </tr>
+      <tr class="subtotal-row">
+        <td colspan="5" style="text-align: right;">รวมก่อนหักส่วนลด</td>
+        <td style="text-align: right;">356,000.00</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════ TOTALS (right-aligned) ═══════════ -->
+  <div class="totals-wrap">
+    <div class="totals-col">
+      <table class="totals-table">
+        <tr>
+          <td class="lbl">ยอดรวม (Subtotal)</td>
+          <td class="val">356,000.00 ฿</td>
+        </tr>
+        <tr class="discount">
+          <td class="lbl">ส่วนลดพิเศษ 5%</td>
+          <td class="val">-17,800.00 ฿</td>
+        </tr>
+        <tr>
+          <td class="lbl">ยอดหลังหักส่วนลด</td>
+          <td class="val">338,200.00 ฿</td>
+        </tr>
+        <tr class="sep"><td colspan="2"></td></tr>
+        <tr class="tax">
+          <td class="lbl">ภาษีมูลค่าเพิ่ม (VAT 7%)</td>
+          <td class="val">23,674.00 ฿</td>
+        </tr>
+        <tr class="wht">
+          <td class="lbl">หัก ณ ที่จ่าย (WHT 3%)</td>
+          <td class="val" style="color: #dc3545;">-10,146.00 ฿</td>
+        </tr>
+        <tr class="sep"><td colspan="2"></td></tr>
+        <tr class="grand">
+          <td class="lbl">ยอดชำระสุทธิ</td>
+          <td class="val" style="text-align: right;">351,728.00 ฿</td>
+        </tr>
+      </table>
     </div>
+  </div>
 
-</div>
+  <!-- ═══════════ PAYMENT + REMARK (full width) ═══════════ -->
+  <div class="payment-box">
+    <h4>ข้อมูลการชำระเงิน (Payment Details)</h4>
+    <p><strong>ธนาคาร:</strong> กสิกรไทย (K-Bank) &nbsp;|&nbsp; <strong>เลขบัญชี:</strong> 123-4-56789-0 &nbsp;|&nbsp; <strong>ชื่อบัญชี:</strong> บริษัท ลินพีดีเอฟ จำกัด &nbsp;|&nbsp; <strong>สาขา:</strong> สุขุมวิท 25</p>
+  </div>
+  <div class="remark-box" style="margin-bottom: 12px;">
+    <strong>หมายเหตุ:</strong> กรุณาชำระภายใน 30 วันนับจากวันที่ใบแจ้งหนี้
+    กรณีชำระล่าช้าคิดอัตราดอกเบี้ย 1.5% ต่อเดือน
+    หากมีข้อสงสัยกรุณาติดต่อ billing@lynpdf.dev
+  </div>
+
+  <!-- ═══════════ SIGNATURES ═══════════ -->
+  <div class="sig-section">
+    <div class="sig-col">
+      <div class="sig-line"></div>
+      <p class="sig-name">ผู้มีอำนาจลงนาม</p>
+      <p class="sig-role">Authorized Signatory</p>
+      <p class="sig-role">บริษัท ลินพีดีเอฟ จำกัด</p>
+    </div>
+    <div class="sig-col">
+      <div class="sig-line"></div>
+      <p class="sig-name">ผู้รับเอกสาร</p>
+      <p class="sig-role">Received By</p>
+      <p class="sig-role">บริษัท เทค สตาร์ทอัพ จำกัด</p>
+    </div>
+    <div class="sig-col">
+      <div class="sig-line"></div>
+      <p class="sig-name">ผู้อนุมัติ</p>
+      <p class="sig-role">Approved By</p>
+      <p class="sig-role">ฝ่ายการเงิน / Finance Dept.</p>
+    </div>
+  </div>
+
+  <!-- ═══════════ FOOTER ═══════════ -->
+  <div class="inv-footer">
+    <div class="footer-brand">LynPDF Co., Ltd.</div>
+    <div class="footer-info">
+      เลขทะเบียน: 0105569012345 &nbsp;|&nbsp;
+      99 อาคาร Innovation Tower ชั้น 14 ถนนสุขุมวิท กรุงเทพฯ 10110 &nbsp;|&nbsp;
+      www.lynpdf.dev
+    </div>
+  </div>
+
 </body>
 </html>

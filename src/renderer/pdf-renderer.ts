@@ -57,6 +57,71 @@ export class PDFRenderer {
   private static wordSegmenter = new Intl.Segmenter('th-TH', { granularity: 'word' });
 
   /**
+   * Check if a line of text is predominantly Thai (> 30% Thai characters).
+   * Used to decide whether cluster-based justification should be applied.
+   */
+  private static isThaiText(text: string): boolean {
+    let thaiCount = 0;
+    let totalCount = 0;
+    for (const char of text) {
+      const cp = char.codePointAt(0)!;
+      if (cp > 0x20) {
+        totalCount++;
+        if (cp >= 0x0E00 && cp <= 0x0E7F) thaiCount++;
+      }
+    }
+    return totalCount > 0 && thaiCount / totalCount > 0.3;
+  }
+
+  /**
+   * Get cluster-level justify tokens for Thai text using HarfBuzz
+   * cluster boundaries.  Also returns a set of token indices that
+   * coincide with word boundaries (for weighted gap distribution).
+   *
+   * The key insight: Thai words are not separated by spaces, so word-level
+   * tokenisation yields very few break points → excessively wide gaps.
+   * Cluster-level tokenisation provides many more break points (one per
+   * base consonant + combining marks) with much smaller gaps.
+   *
+   * Word boundaries still receive extra weight (3×) so the text retains
+   * a natural reading rhythm.
+   */
+  private static getThaiClusterTokens(
+    line: string,
+    fontPath: string,
+    fontSize: number,
+  ): { tokens: string[]; wordBoundaryIndices: Set<number> } {
+    // Get fine-grained cluster segments from HarfBuzz (or grapheme fallback)
+    const clusters = TextShaper.getClusterSegments(line, fontPath, fontSize);
+    if (clusters.length <= 1) {
+      return { tokens: clusters, wordBoundaryIndices: new Set() };
+    }
+
+    // Build set of character positions that are word boundaries
+    const wordBoundaryChars = new Set<number>();
+    const wordSegments = Array.from(PDFRenderer.wordSegmenter.segment(line));
+    let charPos = 0;
+    for (const seg of wordSegments) {
+      if (charPos > 0 && seg.isWordLike) {
+        wordBoundaryChars.add(charPos);
+      }
+      charPos += seg.segment.length;
+    }
+
+    // Map cluster indices → which ones are at word boundaries
+    const wordBoundaryIndices = new Set<number>();
+    let clusterCharPos = 0;
+    for (let i = 0; i < clusters.length; i++) {
+      if (wordBoundaryChars.has(clusterCharPos)) {
+        wordBoundaryIndices.add(i);
+      }
+      clusterCharPos += clusters[i]!.length;
+    }
+
+    return { tokens: clusters, wordBoundaryIndices };
+  }
+
+  /**
    * Split a single line of text into word-level tokens for justification.
    * Spaces are removed (they become flexible gaps); punctuation sticks to
    * the preceding word.
@@ -168,6 +233,49 @@ export class PDFRenderer {
       const gapCount = tokens.length - 1;
       const gapSize = remainingSpace / gapCount;
 
+      // ── Thai cluster-based justification ────────────────────────
+      // When word-level gaps are too wide for Thai text, switch to
+      // HarfBuzz cluster boundaries for much finer space distribution.
+      // Word boundaries receive 3× the weight of intra-word cluster
+      // boundaries so the text retains a natural reading rhythm.
+      const THAI_CLUSTER_GAP_THRESHOLD = fontSize * 0.6;
+      if (gapSize > THAI_CLUSTER_GAP_THRESHOLD && PDFRenderer.isThaiText(line)) {
+        const { tokens: clusterTokens, wordBoundaryIndices } =
+          PDFRenderer.getThaiClusterTokens(line, fontPath, fontSize);
+
+        if (clusterTokens.length > tokens.length) {
+          doc.font(fontName);
+          const clusterWidths = clusterTokens.map(t => doc.widthOfString(t));
+          const clusterTotalWidth = clusterWidths.reduce((s, w) => s + w, 0);
+          const clusterRemaining = containerWidth - clusterTotalWidth;
+
+          if (clusterRemaining > 0 && clusterTokens.length > 1) {
+            // Two-tier weighting: word boundaries 3×, cluster boundaries 1×
+            const WORD_WEIGHT = 3;
+            const CLUSTER_WEIGHT = 1;
+            let totalWeight = 0;
+            for (let j = 1; j < clusterTokens.length; j++) {
+              totalWeight += wordBoundaryIndices.has(j) ? WORD_WEIGHT : CLUSTER_WEIGHT;
+            }
+
+            const unitGap = clusterRemaining / totalWeight;
+
+            let cx = x;
+            for (let j = 0; j < clusterTokens.length; j++) {
+              doc.text(clusterTokens[j]!, cx, cy, { lineBreak: false });
+              cx += clusterWidths[j]!;
+              if (j < clusterTokens.length - 1) {
+                const weight = wordBoundaryIndices.has(j + 1) ? WORD_WEIGHT : CLUSTER_WEIGHT;
+                cx += unitGap * weight;
+              }
+            }
+            cy += lineH;
+            continue;
+          }
+        }
+      }
+
+      // ── Standard word-gap justification (non-Thai / fallback) ───
       // When gap between words would be excessively wide (>2× font size),
       // redistribute some space as letter-spacing to keep text natural.
       const maxGap = fontSize * 2;
