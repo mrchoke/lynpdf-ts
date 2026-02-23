@@ -1,6 +1,6 @@
 # LynPDF Creator 🐱
 
-**HTML/CSS → PDF converter with Thai language support, color emoji, and flexbox layout.**
+**HTML/CSS & Markdown → PDF converter with Thai language support, color emoji, and flexbox layout.**
 
 > **"Lyn"** (pronounced "หลิน" — *Lin*) is the name of a little cat. She inspires this project's goal: creating beautiful PDF documents with graceful simplicity.
 
@@ -22,6 +22,7 @@
 - 🔌 **Dual Interface** — CLI tool or programmatic TypeScript API
 - 📦 **NPM Ready** — Publish-ready package with full TypeScript types
 - ⚡ **Fast** — Bun runtime, font metric caching, Twemoji PNG caching (~500–700 ms for complex documents)
+- 📝 **Markdown → PDF** — Convert `.md` files directly via CLI or API; **syntax highlighting** (highlight.js, 190+ languages), **containers** (`:::info`, `:::warning`, `:::card`), **GitHub Alerts** (`> [!NOTE]`), **color boxes**, GFM tables, task lists, footnotes — with optional Mermaid diagram rendering
 
 ## Requirements
 
@@ -47,6 +48,9 @@ Installed automatically by your package manager:
 | [`css-tree`](https://github.com/csstree/csstree) | CSS parser and AST toolkit (pure JS) |
 | [`svg-to-pdfkit`](https://github.com/alafr/SVG-to-PDFKit) | Inline SVG vector rendering (pure JS) |
 | [`@twemoji/parser`](https://github.com/jdecked/twemoji) | Color emoji parser; PNGs are fetched from CDN and cached locally on first run |
+| [`markdown-it`](https://github.com/markdown-it/markdown-it) | Markdown parser with plugins (GFM tables, footnotes, task lists, custom containers) |
+| [`highlight.js`](https://highlightjs.org/) | Syntax highlighting for 190+ languages (GitHub Light theme) |
+| [`markdown-it-container`](https://github.com/markdown-it/markdown-it-container) | Custom container blocks: `:::info`, `:::card`, `:::box-blue`, etc. |
 
 ---
 
@@ -256,6 +260,22 @@ code /path/to/lynpdf
 bun run examples        # generate all demo PDFs
 bun test                # run unit tests
 bun run test:visual     # run visual / integration tests
+
+---
+
+### Included example PDFs
+
+Example output PDFs are now included in the repository so users can preview results before trying the tool. You can find pre-generated examples in `examples/output/` and test outputs in `tests/output/`.
+
+- To view a sample PDF locally, open any file in your PDF viewer or run:
+
+  "$BROWSER" examples/output/demo-single-page.pdf
+
+- To (re)generate the examples, run:
+
+  bun run examples
+
+If you prefer not to keep generated PDFs in your fork, add `examples/output/` or `tests/output/` to your `.gitignore`.
 ```
 
 ---
@@ -302,6 +322,15 @@ echo "<h1>Hello PDF</h1>" | lynpdf --stdin -o hello.pdf
 
 # With options
 lynpdf invoice.html -c theme.css -o invoice.pdf --page-size A4 --margin 50 --verbose
+
+# Markdown → PDF (auto-detected by extension)
+lynpdf README.md -o readme.pdf
+
+# Markdown with custom CSS, no default stylesheet
+lynpdf doc.md -c custom.css --no-md-css -o doc.pdf
+
+# Force Markdown mode for stdin
+cat notes.md | lynpdf --stdin --md -o notes.pdf
 ```
 
 ### API Usage
@@ -323,6 +352,44 @@ await creator.createPDFFromFile('template.html', 'styles.css', 'output.pdf')
 
 // As buffer (for APIs / HTTP responses)
 const buffer = await creator.createPDFBuffer(html, css)
+```
+
+### Markdown API Usage
+
+```typescript
+import { PDFCreator, MarkdownParser } from 'lynpdf'
+
+const creator = new PDFCreator()
+
+// From Markdown string (with syntax highlighting, containers, mermaid)
+await creator.createPDFFromMarkdown(
+  '# Hello\n\n```ts\nconst x = 42\n```\n\n:::info\nInfo box\n:::',
+  '',  // optional extra CSS
+  'output.pdf'
+)
+
+// From .md file
+await creator.createPDFFromMarkdownFile('README.md', '', 'readme.pdf')
+
+// As buffer (disable built-in CSS)
+const buffer = await creator.createPDFBufferFromMarkdown(
+  markdownString,
+  '',
+  { includeDefaultCss: false }
+)
+
+// Low-level: sync (no mermaid rendering)
+const html = MarkdownParser.toHTML(markdownString, {
+  title: 'My Document',
+  includeDefaultCss: true,
+})
+
+// Low-level: async (with mermaid → SVG rendering if mmdc is installed)
+const htmlAsync = await MarkdownParser.toHTMLAsync(markdownString, {
+  title: 'My Document',
+  renderMermaid: true,
+})
+await creator.createPDF(htmlAsync, '', 'output.pdf')
 ```
 
 ### Framework Integration
@@ -385,19 +452,22 @@ app.get('/pdf', async (c) => {
 ```
 Usage:
   lynpdf <input.html> [options]
+  lynpdf <input.md> [options]                  # Markdown (auto-detected)
   lynpdf -i input.html -c styles.css -o output.pdf
-  cat template.html | lynpdf --stdin -o output.pdf
+  cat README.md | lynpdf --stdin --markdown -o out.pdf
 
 Options:
-  -i, --input <file>        Input HTML file
+  -i, --input <file>        Input HTML or Markdown file
   -o, --output <file>       Output PDF file (default: <input>.pdf)
   -c, --css <file>          External CSS file
       --extra-css <string>  Additional inline CSS string
   -s, --page-size <size>    Page size: A4, A3, letter, legal (default: A4)
   -m, --margin <pts>        Page margin in points (default: 50)
+      --markdown, --md      Force Markdown input (auto-detected for .md files)
+      --no-md-css           Disable default Markdown stylesheet
       --color-emoji         Use color Twemoji PNGs (default)
       --no-color-emoji      Use monochrome emoji font
-      --stdin               Read HTML from stdin
+      --stdin               Read input from stdin
       --verbose             Print detailed progress
   -v, --version             Show version
   -h, --help                Show help
@@ -432,6 +502,93 @@ const creator = new PDFCreator(options?: PDFOptions)
 | `createPDF(html, css, outputPath)` | `Promise<PDFResult>` | Generate PDF file |
 | `createPDFFromFile(htmlPath, cssPath, outputPath)` | `Promise<PDFResult>` | Generate from files |
 | `createPDFBuffer(html, css)` | `Promise<Buffer>` | Generate as Buffer |
+| `createPDFFromMarkdown(md, css, outputPath, mdOptions?)` | `Promise<PDFResult>` | Generate PDF from Markdown string |
+| `createPDFFromMarkdownFile(mdPath, cssPath, outputPath, mdOptions?)` | `Promise<PDFResult>` | Generate PDF from `.md` file |
+| `createPDFBufferFromMarkdown(md, css, mdOptions?)` | `Promise<Buffer>` | Generate Buffer from Markdown |
+
+**MarkdownOptions:**
+
+| Option | Type | Default | Description |
+|--------|------|---------|-------------|
+| `includeDefaultCss` | `boolean` | `true` | Include built-in GitHub-style Markdown CSS |
+| `wrapInDocument` | `boolean` | `true` | Wrap output in a full `<html>` document |
+| `title` | `string` | `'Untitled'` | Document `<title>` |
+| `renderMermaid` | `boolean` | `true` | Render Mermaid diagrams via `mmdc` CLI (async methods only) |
+
+### Markdown Enhanced Features
+
+**Syntax Highlighting** — Code blocks with language hint get highlighted via [highlight.js](https://highlightjs.org/) (190+ languages, GitHub Light theme):
+
+````markdown
+```typescript
+const x: number = 42
+```
+````
+
+**Alert Containers** — Custom container blocks with icon + colored styling:
+
+```markdown
+:::info
+This is an info block.
+:::
+
+:::warning ระวัง!
+Custom title supported.
+:::
+
+:::tip
+:::note
+:::danger
+:::caution
+:::important
+```
+
+**GitHub-Style Alerts** — Standard GitHub alert syntax is also supported:
+
+```markdown
+> [!NOTE]
+> This renders the same as :::note
+
+> [!TIP]
+> [!WARNING]
+> [!CAUTION]
+> [!IMPORTANT]
+```
+
+**Card Container** — Bordered card with optional title:
+
+```markdown
+:::card My Card Title
+Card content with **Markdown** inside.
+:::
+```
+
+**Color Boxes** — Seven colored container variants:
+
+```markdown
+:::box-blue Title     :::box-green Title
+:::box-red Title      :::box-yellow Title
+:::box-purple Title   :::box-gray Title
+:::box-orange Title
+```
+
+**Details Container** — Collapsible-style container:
+
+```markdown
+:::details Click to expand
+Hidden content here.
+:::
+```
+
+**Mermaid Diagrams** — Rendered to SVG when `mmdc` is on PATH (optional dependency: `@mermaid-js/mermaid-cli`). Falls back to styled code block:
+
+````markdown
+```mermaid
+graph TD
+    A[Input] --> B[Process]
+    B --> C[Output]
+```
+````
 
 ## Supported CSS Properties
 

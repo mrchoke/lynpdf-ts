@@ -8,6 +8,7 @@
 import * as fs from 'fs'
 import * as path from 'path'
 import { PDFDocument } from 'pdf-lib'
+import { MarkdownParser } from '../src/parser/markdown-parser'
 import { PDFCreator } from '../src/pdf-creator'
 
 // ─── Types ───────────────────────────────────────────────────
@@ -15,6 +16,8 @@ interface TestCase {
   id: string
   name: string
   htmlFile: string
+  /** True if the fixture is a .md file (needs Markdown→HTML conversion) */
+  isMarkdown?: boolean
   /** Expected minimum page count */
   minPages?: number
   /** Expected maximum page count */
@@ -340,35 +343,59 @@ const TEST_CASE_CONFIG: Record<string, Partial<TestCase>> = {
       assertFileSize(buf, 5, 2000),
     ],
   },
+  'test-18-markdown.md': {
+    name: 'Markdown → PDF',
+    isMarkdown: true,
+    minPages: 1, maxPages: 10,
+    assertions: async (pdf, buf) => [
+      assertPageSize(pdf, 595.28, 841.89),
+      await assertHasEmbeddedFonts(buf),
+      assertFileSize(buf, 5, 2000),
+    ],
+  },
+  'test-19-enhanced-markdown.md': {
+    name: 'Enhanced Markdown — highlights, containers, alerts, cards, color boxes',
+    isMarkdown: true,
+    minPages: 3, maxPages: 15,
+    assertions: async (pdf, buf) => [
+      assertPageSize(pdf, 595.28, 841.89),
+      await assertHasEmbeddedFonts(buf),
+      assertFileSize(buf, 10, 5000),
+    ],
+  },
 }
 
 /**
- * Auto-discover all .html fixtures and build the test list.
+ * Auto-discover all .html and .md fixtures and build the test list.
  * Known fixtures get custom assertions from TEST_CASE_CONFIG.
  * Unknown fixtures get sensible defaults so new tests are never silently skipped.
  */
 function discoverTestCases (): TestCase[] {
   const fixturesDir = path.join(__dirname, 'fixtures')
-  const htmlFiles = fs.readdirSync(fixturesDir)
-    .filter(f => f.startsWith('test-') && f.endsWith('.html'))
+  const fixtureFiles = fs.readdirSync(fixturesDir)
+    .filter(f => f.startsWith('test-') && (f.endsWith('.html') || f.endsWith('.md')))
     .sort()
 
-  return htmlFiles.map((htmlFile, idx) => {
+  return fixtureFiles.map((file, idx) => {
     // Derive a numeric id from filename, e.g. test-03-tables.html → '3.1'
-    const numMatch = htmlFile.match(/^test-(\d+)/)
+    const numMatch = file.match(/^test-(\d+)/)
     const num = numMatch ? parseInt(numMatch[1], 10) : idx + 1
     const id = `${num}.1`
 
+    const isMarkdown = file.endsWith('.md')
+    const ext = isMarkdown ? '.md' : '.html'
+
     // Derive a human-readable name from filename if not configured
-    const baseName = htmlFile.replace(/^test-\d+-/, '').replace('.html', '').replace(/-/g, ' ')
+    const baseName = file.replace(/^test-\d+-/, '').replace(ext, '').replace(/-/g, ' ')
     const defaultName = baseName.charAt(0).toUpperCase() + baseName.slice(1)
 
-    const config = TEST_CASE_CONFIG[htmlFile]
+    const config = TEST_CASE_CONFIG[file]
 
     return {
       id,
       name: config?.name ?? defaultName,
-      htmlFile,
+      htmlFile: file,
+      isMarkdown: config?.isMarkdown ?? isMarkdown,
       minPages: config?.minPages ?? 1,
       maxPages: config?.maxPages ?? 50,
       pages: config?.pages,
@@ -385,8 +412,9 @@ function discoverTestCases (): TestCase[] {
 // ─── Runner ──────────────────────────────────────────────────
 
 async function runTest (tc: TestCase, creator: PDFCreator, css: string): Promise<TestResult> {
-  const htmlPath = path.join(__dirname, 'fixtures', tc.htmlFile)
-  const outPath = path.join(__dirname, 'output', tc.htmlFile.replace('.html', '.pdf'))
+  const fixturePath = path.join(__dirname, 'fixtures', tc.htmlFile)
+  const outName = tc.htmlFile.replace(/\.(html|md)$/, '.pdf')
+  const outPath = path.join(__dirname, 'output', outName)
 
   const result: TestResult = {
     id: tc.id,
@@ -402,14 +430,19 @@ async function runTest (tc: TestCase, creator: PDFCreator, css: string): Promise
   const t0 = performance.now()
 
   try {
-    // Read HTML
-    if (!fs.existsSync(htmlPath)) {
-      throw new Error(`Fixture not found: ${htmlPath}`)
+    // Read fixture
+    if (!fs.existsSync(fixturePath)) {
+      throw new Error(`Fixture not found: ${fixturePath}`)
     }
-    const html = fs.readFileSync(htmlPath, 'utf-8')
+    const raw = fs.readFileSync(fixturePath, 'utf-8')
 
-    // Generate PDF
-    await creator.createPDF(html, css, outPath)
+    // Convert Markdown → HTML if needed, then generate PDF
+    if (tc.isMarkdown) {
+      const html = await MarkdownParser.toHTMLAsync(raw)
+      await creator.createPDF(html, css, outPath)
+    } else {
+      await creator.createPDF(raw, css, outPath)
+    }
 
     // Read back and inspect
     const buf = fs.readFileSync(outPath) as Buffer

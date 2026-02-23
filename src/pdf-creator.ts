@@ -2,6 +2,7 @@ import * as fs from 'fs'
 import { LayoutEngine } from './layout/layout-engine'
 import { CSSParser } from './parser/css-parser'
 import { HTMLParser } from './parser/html-parser'
+import { MarkdownParser, type MarkdownOptions } from './parser/markdown-parser'
 import { PDFRenderer, type RenderOptions } from './renderer/pdf-renderer'
 
 /**
@@ -204,5 +205,50 @@ export class PDFCreator {
     } finally {
       try { fs.unlinkSync(tmpPath) } catch { /* ignore */ }
     }
+  }
+
+  // ── Markdown methods ────────────────────────────────────
+
+  /**
+   * Generate a PDF from a Markdown string.
+   * The markdown is converted to HTML (with an optional default stylesheet)
+   * and then processed through the normal HTML→PDF pipeline.
+   *
+   * @param markdown  Raw Markdown source
+   * @param css       Additional CSS (appended after default markdown CSS)
+   * @param outputPath  Output PDF file path
+   * @param mdOptions   Options for the Markdown→HTML conversion
+   * @returns PDFResult with metadata
+   */
+  async createPDFFromMarkdown (markdown: string, css: string, outputPath: string, mdOptions?: MarkdownOptions): Promise<PDFResult> {
+    const html = await MarkdownParser.toHTMLAsync(markdown, mdOptions)
+    return this.createPDF(html, css, outputPath)
+  }
+
+  /**
+   * Generate a PDF from a Markdown file.
+   * @param mdPath     Path to the .md file
+   * @param cssPath    Path to an optional CSS file
+   * @param outputPath Output PDF file path
+   * @param mdOptions  Options for the Markdown→HTML conversion
+   */
+  async createPDFFromMarkdownFile (mdPath: string, cssPath: string | undefined, outputPath: string, mdOptions?: MarkdownOptions): Promise<PDFResult> {
+    const markdown = fs.readFileSync(mdPath, 'utf-8')
+    let css = ''
+    if (cssPath) {
+      css = fs.readFileSync(cssPath, 'utf-8')
+    }
+    return this.createPDFFromMarkdown(markdown, css, outputPath, mdOptions)
+  }
+
+  /**
+   * Generate a PDF from Markdown and return it as a Buffer.
+   * @param markdown  Raw Markdown source
+   * @param css       Additional CSS
+   * @param mdOptions Options for the Markdown→HTML conversion
+   */
+  async createPDFBufferFromMarkdown (markdown: string, css: string, mdOptions?: MarkdownOptions): Promise<Buffer> {
+    const html = await MarkdownParser.toHTMLAsync(markdown, mdOptions)
+    return this.createPDFBuffer(html, css)
   }
 }

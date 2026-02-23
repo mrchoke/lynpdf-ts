@@ -52,12 +52,12 @@ temp/
 cache/
 
 # Output / generated PDFs (keep directory placeholders so fresh clones work)
-examples/output/*
-!examples/output/.gitkeep
+# examples/output/*
+# !examples/output/.gitkeep
 examples/ex1/
-tests/output/*
-!tests/output/.gitkeep
-/output/
+# tests/output/*
+# !tests/output/.gitkeep
+# /output/
 
 # Coverage
 coverage/
@@ -99,3 +99,5 @@ cache/
 
 # Finder (MacOS) folder config
 .DS_Store
+
+.bun-cache/

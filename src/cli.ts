@@ -2,22 +2,25 @@
 /**
  * LynPDF Creator — CLI
  *
- * Convert HTML + CSS to PDF from the command line.
+ * Convert HTML/CSS or Markdown to PDF from the command line.
  *
  * Usage:
  *   lynpdf <input.html> [options]
+ *   lynpdf <input.md> [options]              # auto-detected from extension
  *   lynpdf -i input.html -c styles.css -o output.pdf
  *
  * Examples:
  *   lynpdf template.html                          # → template.pdf
+ *   lynpdf README.md                               # → README.pdf (Markdown)
  *   lynpdf template.html -o report.pdf            # → report.pdf
  *   lynpdf template.html -c theme.css -o out.pdf  # With external CSS
  *   lynpdf template.html --no-color-emoji         # Disable color emoji (use monochrome)
- *   echo "<h1>Hi</h1>" | lynpdf --stdin -o hi.pdf # From stdin
+ *   echo "# Hi" | lynpdf --stdin --markdown -o hi.pdf  # Markdown from stdin
  */
 
 import * as fs from 'fs'
 import * as path from 'path'
+import { MarkdownParser } from './parser/markdown-parser'
 import { PDFCreator } from './pdf-creator'
 
 // ── Parse arguments ──────────────────────────────────────────
@@ -34,16 +37,20 @@ interface CliArgs {
   colorEmoji: boolean
   verbose: boolean
   stdin: boolean
+  markdown: boolean   // explicit --markdown flag
+  noMdCss: boolean    // --no-md-css flag
   help: boolean
   version: boolean
 }
 
-function parseArgs(argv: string[]): CliArgs {
+function parseArgs (argv: string[]): CliArgs {
   const args: CliArgs = {
     compress: true,
     colorEmoji: true,
     verbose: false,
     stdin: false,
+    markdown: false,
+    noMdCss: false,
     help: false,
     version: false,
   }
@@ -104,6 +111,13 @@ function parseArgs(argv: string[]): CliArgs {
       case '--stdin':
         args.stdin = true
         break
+      case '--markdown':
+      case '--md':
+        args.markdown = true
+        break
+      case '--no-md-css':
+        args.noMdCss = true
+        break
       default:
         // Positional: first positional is input, second is output
         if (!arg.startsWith('-')) {
@@ -120,18 +134,19 @@ function parseArgs(argv: string[]): CliArgs {
   return args
 }
 
-function showHelp(): void {
+function showHelp (): void {
   console.log(`
-LynPDF Creator — HTML/CSS to PDF converter
+LynPDF Creator — HTML/CSS & Markdown to PDF converter
 "Lyn" (หลิน) is the name of a little cat 🐱
 
 Usage:
   lynpdf <input.html> [options]
+  lynpdf <input.md> [options]                  # Markdown (auto-detected)
   lynpdf -i input.html -c styles.css -o output.pdf
-  cat template.html | lynpdf --stdin -o output.pdf
+  cat README.md | lynpdf --stdin --markdown -o out.pdf
 
 Options:
-  -i, --input <file>        Input HTML file
+  -i, --input <file>        Input HTML or Markdown file
   -o, --output <file>       Output PDF file (default: <input>.pdf)
   -c, --css <file>          External CSS file
       --extra-css <string>  Additional inline CSS string
@@ -142,20 +157,24 @@ Options:
       --no-compress         Disable compression (larger file, faster)
       --color-emoji         Use color Twemoji PNGs (default)
       --no-color-emoji      Use monochrome emoji font
-      --stdin               Read HTML from stdin
+      --markdown, --md      Force Markdown input (auto-detected for .md files)
+      --no-md-css           Disable default Markdown stylesheet
+      --stdin               Read input from stdin
       --verbose             Print detailed logs
   -v, --version             Show version
   -h, --help                Show this help
 
 Examples:
   lynpdf report.html
+  lynpdf README.md                                  # Markdown → PDF
+  lynpdf README.md -c corporate.css -o guide.pdf    # With custom CSS
   lynpdf report.html -c corporate.css -o Q4-report.pdf
   lynpdf invoice.html --page-size letter --margin 72
-  echo "<h1>Hello PDF</h1>" | lynpdf --stdin -o hello.pdf
+  echo "# Hello" | lynpdf --stdin --markdown -o hello.pdf
 `)
 }
 
-function showVersion(): void {
+function showVersion (): void {
   try {
     const pkg = JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'package.json'), 'utf-8'))
     console.log(`lynpdf v${pkg.version}`)
@@ -164,7 +183,7 @@ function showVersion(): void {
   }
 }
 
-async function readStdin(): Promise<string> {
+async function readStdin (): Promise<string> {
   const chunks: Buffer[] = []
   for await (const chunk of process.stdin) {
     chunks.push(chunk)
@@ -172,7 +191,7 @@ async function readStdin(): Promise<string> {
   return Buffer.concat(chunks).toString('utf-8')
 }
 
-async function main(): Promise<void> {
+async function main (): Promise<void> {
   const args = parseArgs(process.argv.slice(2))
 
   if (args.help) {
@@ -189,15 +208,28 @@ async function main(): Promise<void> {
   let html: string
   let htmlPath: string | undefined
 
+  // Determine if input is Markdown
+  const isMarkdown = args.markdown || (args.input ? MarkdownParser.isMarkdownFile(args.input) : false)
+
   if (args.stdin) {
-    html = await readStdin()
+    const raw = await readStdin()
+    if (isMarkdown) {
+      html = await MarkdownParser.toHTMLAsync(raw, { includeDefaultCss: !args.noMdCss })
+    } else {
+      html = raw
+    }
   } else if (args.input) {
     htmlPath = path.resolve(args.input)
     if (!fs.existsSync(htmlPath)) {
       console.error(`Error: File not found: ${htmlPath}`)
       process.exit(1)
     }
-    html = fs.readFileSync(htmlPath, 'utf-8')
+    const raw = fs.readFileSync(htmlPath, 'utf-8')
+    if (isMarkdown) {
+      html = await MarkdownParser.toHTMLAsync(raw, { includeDefaultCss: !args.noMdCss })
+    } else {
+      html = raw
+    }
   } else {
     console.error('Error: No input file specified. Use -h for help.')
     process.exit(1)

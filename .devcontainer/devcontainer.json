@@ -1,28 +1,13 @@
-// For format details, see https://aka.ms/devcontainer.json
 {
   "name": "LynPDF (Bun + TypeScript)",
-  // Build from our custom Dockerfile in this folder
   "build": {
-    "dockerfile": "Dockerfile",
-    "context": "..",
-    "args": {
-      "USERNAME": "dev",
-      "USER_UID": "1000",
-      "USER_GID": "1000"
-    }
+    "dockerfile": "Dockerfile.dev"
   },
-  // Run as non-root dev user
-  "remoteUser": "dev",
-  // Mount the project source into /workspace
+  "remoteUser": "bun",
   "workspaceFolder": "/workspace",
   "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
-  // ── Port forwards ────────────────────────────────────────────────────────────
-  // Uncomment if you add an HTTP server (e.g. for live PDF preview)
-  // "forwardPorts": [3000],
-  // ── Life-cycle hooks ─────────────────────────────────────────────────────────
-  "postCreateCommand": "bun install",
+  "postCreateCommand": ".devcontainer/post-create.sh",
   "postStartCommand": "echo '✅ LynPDF devcontainer ready. Run: bun run examples'",
-  // ── VS Code settings & extensions ────────────────────────────────────────────
   "customizations": {
     "vscode": {
       "settings": {
@@ -95,19 +80,19 @@
       ]
     }
   },
-  // ── Container features ───────────────────────────────────────────────────────
-  // (Dockerfile already installs Bun + Node; these add extra shell goodies)
   "features": {
-    // Useful git utilities (delta diff pager, gh CLI)
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/devcontainers/features/common-utils:2": {
+      "installZsh": "true",
+      "upgradePackages": "false",
+      "installOhMyZsh": "true",
+      "configureZshAsDefaultShell": "true"
+    }
   },
-  // ── Environment variables ────────────────────────────────────────────────────
   "remoteEnv": {
     "NODE_ENV": "development",
-    // Tell harfbuzzjs / bun where to cache WASM compilation
     "BUN_INSTALL_CACHE_DIR": "/workspace/.bun-cache"
   },
-  // ── Container resource hints (for Docker Desktop) ────────────────────────────
   "hostRequirements": {
     "memory": "2gb"
   }

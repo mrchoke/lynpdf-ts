@@ -4,7 +4,7 @@ import * as path from 'path'
 import PDFDocument from 'pdfkit'
 import SVGtoPDF from 'svg-to-pdfkit'
 import { PAGE_H, PAGE_MARGIN, PAGE_W } from '../constants'
-import type { LayoutNode } from '../layout/layout-engine'
+import type { ColorSegment, LayoutNode } from '../layout/layout-engine'
 import type { FontFaceRule, PageRule } from '../layout/style-resolver'
 import { hasEmoji, parseEmojiRuns, preloadEmoji, type TextRun } from '../text/emoji-handler'
 import { TextMeasurer } from '../text/text-measurer'
@@ -326,6 +326,29 @@ export class PDFRenderer {
     } catch {
       return null
     }
+  }
+
+  /**
+   * Split an array of ColorSegments into lines.
+   * Each segment may contain '\n' characters; this splits them so that
+   * the result is an array of lines, each line being an array of segments.
+   */
+  private static splitSegmentsIntoLines (segments: ColorSegment[]): ColorSegment[][] {
+    const lines: ColorSegment[][] = [[]]
+    for (const seg of segments) {
+      const parts = seg.text.split('\n')
+      for (let i = 0; i < parts.length; i++) {
+        if (i > 0) lines.push([])   // start a new line
+        const text = parts[i]!
+        if (text) {
+          lines[lines.length - 1]!.push({ text, color: seg.color })
+        }
+      }
+    }
+    // Trim leading/trailing empty lines (from HTML formatting)
+    while (lines.length > 0 && lines[0]!.length === 0) lines.shift()
+    while (lines.length > 0 && lines[lines.length - 1]!.length === 0) lines.pop()
+    return lines
   }
 
   /**
@@ -1306,11 +1329,17 @@ export class PDFRenderer {
           // This replaces the old U+200B approach which caused square boxes
           // because the font lacked a glyph for the zero-width space.
           const fontPath = PDFRenderer.resolveFontPath(node.styles)
-          const wrapWidth = node.width > 0 ? node.width : 495
-          let processedContent = textMeasurer.wrapText(node.content, fontSize, wrapWidth, fontPath)
-
-          // Trim leading whitespace from each line to prevent jagged left edges
-          processedContent = processedContent.split('\n').map(l => l.trimStart()).join('\n')
+          const isPreformatted = node.styles['white-space'] === 'pre'
+          let processedContent: string
+          if (isPreformatted) {
+            // Preserve whitespace exactly — no word-wrapping, no trimming
+            processedContent = node.content
+          } else {
+            const wrapWidth = node.width > 0 ? node.width : 495
+            processedContent = textMeasurer.wrapText(node.content, fontSize, wrapWidth, fontPath)
+            // Trim leading whitespace from each line to prevent jagged left edges
+            processedContent = processedContent.split('\n').map(l => l.trimStart()).join('\n')
+          }
 
           // ── Emoji-aware rendering ──────────────────────────────
           const emojiRuns = emojiRunMap.get(node) || [{ type: 'text' as const, text: processedContent }]
@@ -1323,7 +1352,40 @@ export class PDFRenderer {
           // Wrap text rendering in save/restore to isolate fill color/opacity
           doc.save()
 
-          if (!hasEmojiContent) {
+          // ── Preformatted text — render line by line ──────────────
+          if (isPreformatted) {
+            doc.fontSize(fontSize)
+              .fillOpacity(parsedColor.opacity)
+              .font(fontName)
+
+            // If we have color segments (syntax highlighted code), render per-token
+            if (node.colorSegments && node.colorSegments.length > 0) {
+              // Merge segments into lines preserving color
+              const segLines = PDFRenderer.splitSegmentsIntoLines(node.colorSegments)
+              let cy = localY
+              for (const lineSegs of segLines) {
+                let cx = node.x
+                for (const seg of lineSegs) {
+                  if (!seg.text) continue
+                  const segColor = seg.color ? (ColorParser.parse(seg.color) || parsedColor) : parsedColor
+                  doc.fillOpacity(segColor.opacity).fillColor(segColor.color).font(fontName)
+                  doc.text(seg.text, cx, cy, { lineBreak: false, continued: false })
+                  cx += textMeasurer.measureWidth(seg.text, fontSize, fontPath)
+                }
+                cy += lineH
+              }
+            } else {
+              doc.fillColor(parsedColor.color)
+              const lines = processedContent.split('\n')
+              let cy = localY
+              for (const line of lines) {
+                if (line) {
+                  doc.text(line, node.x, cy, { lineBreak: false })
+                }
+                cy += lineH
+              }
+            }
+          } else if (!hasEmojiContent) {
             const renderHeight = node.height > 0 ? node.height + fontSize * 0.5 : undefined
 
             // Check if text needs glyph fallback (e.g., ✓ not in Sarabun)

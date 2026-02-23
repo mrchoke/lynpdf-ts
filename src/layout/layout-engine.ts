@@ -8,6 +8,12 @@ import type { FontFaceRule, PageRule } from './style-resolver'
 import { StyleResolver } from './style-resolver'
 import { YogaMapper } from './yoga-mapper'
 
+/** A colored text segment within a preformatted code block. */
+export interface ColorSegment {
+  text: string
+  color?: string   // inline CSS color, e.g. '#d73a49'
+}
+
 export interface LayoutNode {
   type: 'document' | 'block' | 'text'
   tagName?: string
@@ -20,6 +26,8 @@ export interface LayoutNode {
   styles: Record<string, string>
   children: LayoutNode[]
   listIndex?: number
+  /** Per-token color info for preformatted code blocks (syntax highlighting). */
+  colorSegments?: ColorSegment[]
 }
 
 export interface LayoutResult {
@@ -162,7 +170,7 @@ export class LayoutEngine {
 
     interface CustomNode {
       yogaNode: Node
-      data: { type: string, tagName?: string, content?: string, attrs?: Record<string, string>, styles: Record<string, string>, listIndex?: number }
+      data: { type: string, tagName?: string, content?: string, attrs?: Record<string, string>, styles: Record<string, string>, listIndex?: number, colorSegments?: ColorSegment[] }
       children: CustomNode[]
     }
 
@@ -304,7 +312,7 @@ export class LayoutEngine {
         }
 
         // Only inherit typography styles
-        const inheritableStyles = ['font-family', 'font-size', 'font-weight', 'font-style', 'color', 'text-align', 'line-height', 'border-collapse']
+        const inheritableStyles = ['font-family', 'font-size', 'font-weight', 'font-style', 'color', 'text-align', 'line-height', 'border-collapse', 'white-space']
         const filteredInheritedStyles: Record<string, string> = {}
         for (const key of inheritableStyles) {
           if (inheritedStyles[key]) {
@@ -464,6 +472,16 @@ export class LayoutEngine {
           currentStyles['display'] = currentStyles['display'] || 'flex'
           currentStyles['flex-direction'] = currentStyles['flex-direction'] || 'row'
           currentStyles['flex-wrap'] = currentStyles['flex-wrap'] || 'wrap'
+        } else if (tagName === 'pre') {
+          currentStyles['display'] = currentStyles['display'] || 'flex'
+          currentStyles['flex-direction'] = currentStyles['flex-direction'] || 'column'
+          currentStyles['width'] = currentStyles['width'] || '100%'
+          currentStyles['white-space'] = currentStyles['white-space'] || 'pre'
+          currentStyles['overflow'] = currentStyles['overflow'] || 'hidden'
+        } else if (tagName === 'code') {
+          currentStyles['display'] = currentStyles['display'] || 'flex'
+          currentStyles['flex-direction'] = currentStyles['flex-direction'] || 'row'
+          currentStyles['flex-wrap'] = currentStyles['flex-wrap'] || 'wrap'
         } else if (['header', 'footer', 'main', 'section', 'article', 'aside', 'nav', 'figure', 'figcaption', 'blockquote', 'address', 'hgroup'].includes(tagName)) {
           // HTML5 semantic elements — treat like div
           if (!currentStyles['display']) {
@@ -495,7 +513,7 @@ export class LayoutEngine {
         }
 
         // Only add to parent if it's a visible block
-        if (['body', 'div', 'p', 'h1', 'h2', 'h3', 'span', 'strong', 'b', 'em', 'i', 'br', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'img', 'svg', 'ul', 'ol', 'li', 'a', 'header', 'footer', 'main', 'section', 'article', 'aside', 'nav', 'figure', 'figcaption', 'blockquote', 'address', 'hgroup'].includes(tagName)) {
+        if (['body', 'div', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'span', 'strong', 'b', 'em', 'i', 'br', 'hr', 'table', 'thead', 'tbody', 'tfoot', 'tr', 'td', 'th', 'img', 'svg', 'ul', 'ol', 'li', 'a', 'pre', 'code', 'header', 'footer', 'main', 'section', 'article', 'aside', 'nav', 'figure', 'figcaption', 'blockquote', 'address', 'hgroup'].includes(tagName)) {
           parentCustomNode.yogaNode.insertChild(blockYogaNode, parentCustomNode.yogaNode.getChildCount())
 
           let content = undefined
@@ -516,7 +534,113 @@ export class LayoutEngine {
           }
           parentCustomNode.children.push(customNode)
 
-          if (tagName !== 'svg' && node.childNodes) {
+          if (tagName === 'pre' && node.childNodes) {
+            // ── Special handling for <pre>: flatten all descendant text ──
+            // Code blocks (pre > code) have deeply nested spans with
+            // inline style="color:..." for syntax highlighting.
+            // We extract both the flat text AND colored segments so the
+            // renderer can draw each token in its correct color.
+            //
+            // The <pre> may contain a <div class="code-lang-badge"> before
+            // <code>; we only extract text from the <code> child.
+            const extractAllText = (n: any): string => {
+              if (n.nodeName === '#text') return n.value || ''
+              let t = ''
+              if (n.childNodes) for (const c of n.childNodes) t += extractAllText(c)
+              return t
+            }
+
+            /** Extract colored segments: [ { text, color? }, … ] */
+            const extractColorSegments = (n: any, inheritedColor?: string): ColorSegment[] => {
+              if (n.nodeName === '#text') {
+                const val = n.value || ''
+                if (!val) return []
+                return [{ text: val, color: inheritedColor }]
+              }
+              // Skip the language badge div — it's not code content
+              if (n.nodeName === 'div') return []
+              // Check for inline style color on this element (e.g. <span style="color:#d73a49">)
+              let color = inheritedColor
+              if (n.attrs) {
+                const styleAttr = (n.attrs as any[]).find((a: any) => a.name === 'style')
+                if (styleAttr) {
+                  const m = (styleAttr.value as string).match(/color\s*:\s*([^;]+)/)
+                  if (m) color = m[1]!.trim()
+                }
+              }
+              const segs: ColorSegment[] = []
+              if (n.childNodes) {
+                for (const c of n.childNodes) segs.push(...extractColorSegments(c, color))
+              }
+              return segs
+            }
+
+            // Resolve <code> child styles (font-size, line-height) if present
+            const codeChild = node.childNodes.find((c: any) => c.nodeName === 'code')
+            let preTextStyles = { ...currentStyles }
+            if (codeChild) {
+              const codeAttrs = codeChild.attrs || []
+              const codeClassAttr = codeAttrs.find((a: any) => a.name === 'class')
+              const codeClasses = codeClassAttr ? codeClassAttr.value.split(' ') : []
+              const codeNodeStyles = styleResolver.resolve('code', codeClasses, undefined, childAncestorChain, undefined, undefined)
+              preTextStyles = { ...preTextStyles, ...codeNodeStyles }
+              const codeStyleAttr = codeAttrs.find((a: any) => a.name === 'style')
+              if (codeStyleAttr) {
+                for (const part of codeStyleAttr.value.split(';')) {
+                  const [key, value] = part.split(':')
+                  if (key && value) preTextStyles[key.trim()] = value.trim()
+                }
+              }
+            }
+            preTextStyles['white-space'] = 'pre'
+
+            let rawText = extractAllText(codeChild || node)
+            // Trim leading/trailing blank lines from HTML formatting
+            rawText = rawText.replace(/^\n+/, '').replace(/\n+$/, '')
+
+            if (rawText) {
+              const fontSize = parseInt(preTextStyles['font-size'] || '14', 10)
+              const fontPath = LayoutEngine.resolveFontPath(preTextStyles)
+              const lineHeightRaw = preTextStyles['line-height']
+              let lineHeightMultiplier = 0
+              if (lineHeightRaw) {
+                const parsed = parseFloat(lineHeightRaw)
+                if (!isNaN(parsed)) {
+                  lineHeightMultiplier = lineHeightRaw.endsWith('px') ? parsed / fontSize : parsed
+                }
+              }
+
+              const textYogaNode = Yoga.Node.create()
+              textYogaNode.setMeasureFunc((_width, _widthMode) => {
+                const lines = rawText.split('\n')
+                const maxLineWidth = lines.reduce((max, line) => {
+                  const w = line ? textMeasurer.measureWidth(line, fontSize, fontPath) : 0
+                  return Math.max(max, w)
+                }, 0)
+                const oneLineH = textMeasurer.measureHeight(fontSize, lineHeightMultiplier)
+                return { width: maxLineWidth, height: oneLineH * Math.max(1, lines.length) }
+              })
+              textYogaNode.setWidthPercent(100)
+
+              const leafStyles: Record<string, string> = {}
+              for (const k of ['font-family', 'font-size', 'font-weight', 'font-style', 'color', 'text-align', 'line-height', 'white-space']) {
+                if (preTextStyles[k]) leafStyles[k] = preTextStyles[k]
+              }
+
+              // Extract color segments for syntax highlighting
+              const rawSegments = extractColorSegments(codeChild || node)
+              // Trim leading/trailing blank lines from segments too
+              // (the rawText has already been trimmed above)
+              const colorSegments = rawSegments.length > 0 ? rawSegments : undefined
+
+              blockYogaNode.insertChild(textYogaNode, blockYogaNode.getChildCount())
+              customNode.children.push({
+                yogaNode: textYogaNode,
+                data: { type: 'text', content: rawText, styles: leafStyles, colorSegments },
+                children: []
+              })
+            }
+          } else if (tagName !== 'svg' && node.childNodes) {
             let liIndex = 1
             let childRowIndex = 0
 
@@ -628,7 +752,8 @@ export class LayoutEngine {
         height,
         styles: data.styles || {},
         children: [],
-        listIndex: data.listIndex
+        listIndex: data.listIndex,
+        colorSegments: data.colorSegments,
       }
 
       for (const child of customNode.children) {

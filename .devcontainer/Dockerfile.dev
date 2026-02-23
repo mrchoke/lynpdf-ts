@@ -1,0 +1,50 @@
+# ──────────────────────────────────────────────────────────────────────────────
+# LynPDF Dev Container
+#
+# Base: Ubuntu 24.04 (Noble) — slim variant
+# Runtime: Bun (latest stable) + Node.js 20 LTS (fallback / tool compat)
+#
+# All HarfBuzz shaping and Yoga layout run as pure WASM bundled inside
+# node_modules — NO libharfbuzz-dev, libfontconfig-dev, or build-essential
+# are required at runtime.  We only install the bare minimum system tools
+# needed for a productive dev environment.
+# ──────────────────────────────────────────────────────────────────────────────
+
+FROM oven/bun:latest
+
+# Prevent apt from prompting for timezone / locale during install
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=Asia/Bangkok
+
+RUN apt-get update && apt-get install -y \
+  build-essential \
+  libcairo2-dev \
+  libpango1.0-dev \
+  libjpeg-dev \
+  libgif-dev \
+  libatomic1 \
+  librsvg2-dev \
+  git \
+  curl \
+  zsh \
+  locales \
+  && rm -rf /var/lib/apt/lists/*
+
+RUN sed --in-place '/en_US.UTF-8/s/^#//' /etc/locale.gen  \
+  &&  sed --in-place '/th_TH.UTF-8/s/^#//' /etc/locale.gen \
+  && locale-gen
+
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+ENV LANG=en_US.UTF-8
+ENV LC_ALL=en_US.UTF-8
+
+
+WORKDIR /workspace
+
+# Set default shell to zsh
+ENV SHELL=/bin/zsh
+
+# Keep container running
+CMD ["sleep", "infinity"]
+
