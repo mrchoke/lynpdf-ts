@@ -1,0 +1,67 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>test-16-page-margin</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 2cm 1.5cm;
+      /* 2cm top/bottom, 1.5cm left/right */
+    }
+
+    body {
+      font-family: sans-serif;
+      font-size: 12pt;
+      line-height: 1.35;
+    }
+
+    h1 {
+      font-size: 18pt;
+      margin: 0 0 0.5em 0;
+    }
+
+    p {
+      margin: 0 0 0.75em 0;
+    }
+
+    .box {
+      border: 1px solid #ccc;
+      padding: 8px;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Page Margin Test</h1>
+  <p>This document tests page margins — the @page margin should be applied and content should flow across pages.</p>
+  <!-- Static repeated blocks to force multiple pages (no JS execution required) -->
+  <div class="box">Paragraph block 1: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 2: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 3: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 4: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 5: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 6: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 7: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 8: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 9: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 10: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 11: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 12: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 13: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 14: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 15: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 16: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 17: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 18: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 19: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 20: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 21: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 22: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 23: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+  <div class="box">Paragraph block 24: Lorem ipsum dolor sit amet, consectetur adipiscing elit.</div>
+</body>
+
+</html>

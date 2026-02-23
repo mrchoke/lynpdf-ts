@@ -51,11 +51,13 @@ temp/
 .cache/
 cache/
 
-# Output / generated PDFs
-examples/output/
+# Output / generated PDFs (keep directory placeholders so fresh clones work)
+examples/output/*
+!examples/output/.gitkeep
 examples/ex1/
-tests/output/
-output/
+tests/output/*
+!tests/output/.gitkeep
+/output/
 
 # Coverage
 coverage/
@@ -90,12 +92,7 @@ coverage/
 # Twemoji cache
 cache/
 
-# Examples output and tests
-examples/output/
-examples/tests/
-
-# Test output
-tests/output/
+# Examples output and tests (directories tracked via .gitkeep — see rules above)
 
 # IntelliJ based IDEs
 .idea

@@ -1,0 +1,32 @@
+<!doctype html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>test-17-page-orientation</title>
+  <style>
+    /* Standard A4 landscape declaration */
+    @page {
+      size: A4 landscape;
+      margin: 2cm;
+    }
+
+    body {
+      font-family: sans-serif;
+      font-size: 12pt;
+    }
+
+    h1 {
+      font-size: 20pt;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Page Orientation Test — Landscape</h1>
+  <p>This fixture sets <code>@page {{ size: A4 landscape }}</code> and verifies the produced PDF page dimensions are
+    landscape (width &gt; height).</p>
+  <p>One short paragraph is enough — primary assertion is page size/orientation.</p>
+</body>
+
+</html>

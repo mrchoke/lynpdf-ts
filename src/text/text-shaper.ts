@@ -1,4 +1,4 @@
-import * as fs from 'fs';
+import * as fs from 'fs'
 
 /**
  * HarfBuzz-based text shaper for proper glyph positioning.
@@ -13,66 +13,66 @@ import * as fs from 'fs';
  */
 
 /** Cached HarfBuzz instance (initialised lazily) */
-let hbInstance: any = null;
+let hbInstance: any = null
 
 /** Font blob cache: fontPath → hb blob */
-const blobCache = new Map<string, any>();
+const blobCache = new Map<string, any>()
 /** Font face cache: fontPath → hb face */
-const faceCache = new Map<string, any>();
+const faceCache = new Map<string, any>()
 /** Font object cache: fontPath+size → hb font */
-const fontCache = new Map<string, any>();
+const fontCache = new Map<string, any>()
 
 /**
  * Initialise the HarfBuzz WASM instance (loaded once, cached).
  */
-async function getHb(): Promise<any> {
-  if (hbInstance) return hbInstance;
-  hbInstance = await require('harfbuzzjs');
-  return hbInstance;
+async function getHb (): Promise<any> {
+  if (hbInstance) return hbInstance
+  hbInstance = await require('harfbuzzjs')
+  return hbInstance
 }
 
 /**
  * Get or create a HarfBuzz font for the given path + size.
  */
-function getHbFont(hb: any, fontPath: string, fontSize: number): any {
-  const key = `${fontPath}@${fontSize}`;
-  if (fontCache.has(key)) return fontCache.get(key);
+function getHbFont (hb: any, fontPath: string, fontSize: number): any {
+  const key = `${fontPath}@${fontSize}`
+  if (fontCache.has(key)) return fontCache.get(key)
 
-  let blob = blobCache.get(fontPath);
+  let blob = blobCache.get(fontPath)
   if (!blob) {
-    const fontData = fs.readFileSync(fontPath);
-    blob = hb.createBlob(fontData);
-    blobCache.set(fontPath, blob);
+    const fontData = fs.readFileSync(fontPath)
+    blob = hb.createBlob(fontData)
+    blobCache.set(fontPath, blob)
   }
 
-  let face = faceCache.get(fontPath);
+  let face = faceCache.get(fontPath)
   if (!face) {
-    face = hb.createFace(blob, 0);
-    faceCache.set(fontPath, face);
+    face = hb.createFace(blob, 0)
+    faceCache.set(fontPath, face)
   }
 
-  const font = hb.createFont(face);
-  font.setScale(fontSize * 64, fontSize * 64); // HarfBuzz uses 26.6 fixed point
-  fontCache.set(key, font);
-  return font;
+  const font = hb.createFont(face)
+  font.setScale(fontSize * 64, fontSize * 64) // HarfBuzz uses 26.6 fixed point
+  fontCache.set(key, font)
+  return font
 }
 
 /** Result of shaping a string of text */
 export interface ShapedGlyph {
   /** Glyph ID in the font */
-  g: number;
+  g: number
   /** Character cluster index (maps back to input string) */
-  cl: number;
+  cl: number
   /** X advance (in font units ÷ 64 → points) */
-  ax: number;
+  ax: number
   /** Y advance */
-  ay: number;
+  ay: number
   /** X offset from the glyph origin */
-  dx: number;
+  dx: number
   /** Y offset from the glyph origin */
-  dy: number;
+  dy: number
   /** Optional glyph flags */
-  fl?: number;
+  fl?: number
 }
 
 export class TextShaper {
@@ -83,9 +83,9 @@ export class TextShaper {
    * Eagerly load the HarfBuzz WASM module.
    * Call this once at startup so that subsequent shapeText() calls are fast.
    */
-  static async init(): Promise<void> {
-    await getHb();
-    TextShaper.ready = true;
+  static async init (): Promise<void> {
+    await getHb()
+    TextShaper.ready = true
   }
 
   /**
@@ -94,10 +94,10 @@ export class TextShaper {
    * @param text The Thai text to segment.
    * @returns An array of segmented words.
    */
-  static segmentThaiWords(text: string): string[] {
-    const segmenter = new Intl.Segmenter('th-TH', { granularity: 'word' });
-    const segments = segmenter.segment(text);
-    return Array.from(segments).map(s => s.segment);
+  static segmentThaiWords (text: string): string[] {
+    const segmenter = new Intl.Segmenter('th-TH', { granularity: 'word' })
+    const segments = segmenter.segment(text)
+    return Array.from(segments).map(s => s.segment)
   }
 
   /**
@@ -113,37 +113,46 @@ export class TextShaper {
    * @param fontSize Font size in points.
    * @returns Array of shaped glyphs with positions.
    */
-  static shapeText(text: string, fontPath: string, fontSize: number): ShapedGlyph[] {
+  static shapeText (text: string, fontPath: string, fontSize: number): ShapedGlyph[] {
     if (!TextShaper.ready || !hbInstance) {
       // Fallback: return empty array (caller should use fontkit's layout)
-      return [];
+      return []
     }
 
-    const hb = hbInstance;
-    const font = getHbFont(hb, fontPath, fontSize);
+    const hb = hbInstance
+    const font = getHbFont(hb, fontPath, fontSize)
 
-    const buffer = hb.createBuffer();
+    const buffer = hb.createBuffer()
     try {
-      buffer.addText(text);
-      buffer.guessSegmentProperties();
+      buffer.addText(text)
+      buffer.guessSegmentProperties()
       // Ensure Thai script properties are set
-      buffer.setDirection('ltr');
+      buffer.setDirection('ltr')
 
-      hb.shape(font, buffer);
+      hb.shape(font, buffer)
 
-      const glyphs: ShapedGlyph[] = buffer.json();
-      // Convert from 26.6 fixed point to PDF points
-      return glyphs.map((g: any) => ({
-        g: g.g,
-        cl: g.cl,
-        ax: g.ax / 64,
-        ay: g.ay / 64,
-        dx: g.dx / 64,
-        dy: g.dy / 64,
-        fl: g.fl,
-      }));
+      // Use getGlyphInfos/getGlyphPositions instead of buffer.json() because
+      // hb_buffer_serialize("JSON") returns an empty string on Linux (WASM
+      // serialiser behaves differently across platforms), causing JSON.parse
+      // to throw "Unexpected EOF".  The low-level accessors read directly from
+      // WASM memory and are portable across all platforms.
+      const infos = buffer.getGlyphInfos()
+      const positions = buffer.getGlyphPositions()
+      return infos.map((info: any, i: number) => {
+        const pos = positions[i] ?? { x_advance: 0, y_advance: 0, x_offset: 0, y_offset: 0 }
+        return {
+          g: info.codepoint,
+          cl: info.cluster,
+          // Convert from 26.6 fixed point to PDF points
+          ax: pos.x_advance / 64,
+          ay: pos.y_advance / 64,
+          dx: pos.x_offset / 64,
+          dy: pos.y_offset / 64,
+          fl: info.mask, // glyph flags (HB_GLYPH_FLAG_UNSAFE_TO_BREAK etc.)
+        }
+      })
     } finally {
-      buffer.destroy();
+      buffer.destroy()
     }
   }
 
@@ -152,13 +161,13 @@ export class TextShaper {
    * for Thai text.  Returns true if the shaped output includes non-zero
    * GPOS offsets (dx/dy), indicating marks were positioned.
    */
-  static validateThaiShaping(fontPath: string, fontSize: number = 16): boolean {
+  static validateThaiShaping (fontPath: string, fontSize: number = 16): boolean {
     // Test string with stacked marks: ก็, ป้, ฝั่ง
-    const test = 'ก็ ป้อม ฝั่ง';
-    const glyphs = TextShaper.shapeText(test, fontPath, fontSize);
-    if (glyphs.length === 0) return false;
+    const test = 'ก็ ป้อม ฝั่ง'
+    const glyphs = TextShaper.shapeText(test, fontPath, fontSize)
+    if (glyphs.length === 0) return false
     // At least some glyphs should have non-zero dy (mark positioning)
-    return glyphs.some(g => g.dy !== 0 || g.dx !== 0);
+    return glyphs.some(g => g.dy !== 0 || g.dx !== 0)
   }
 
   // ─── Cluster-based segmentation for Thai justification ──────────
@@ -182,40 +191,40 @@ export class TextShaper {
    * @param fontSize  Font size in points.
    * @returns Array of text segments (each = one cluster).
    */
-  static getClusterSegments(text: string, fontPath: string, fontSize: number): string[] {
-    const glyphs = TextShaper.shapeText(text, fontPath, fontSize);
+  static getClusterSegments (text: string, fontPath: string, fontSize: number): string[] {
+    const glyphs = TextShaper.shapeText(text, fontPath, fontSize)
     if (glyphs.length === 0) {
       // Fallback: use Unicode grapheme cluster segmentation
-      return TextShaper.getGraphemeSegments(text);
+      return TextShaper.getGraphemeSegments(text)
     }
 
     // Collect unique cluster start indices, preserving first-seen order
-    const seen = new Set<number>();
-    const clusterStarts: number[] = [];
+    const seen = new Set<number>()
+    const clusterStarts: number[] = []
     for (const g of glyphs) {
       if (!seen.has(g.cl)) {
-        seen.add(g.cl);
-        clusterStarts.push(g.cl);
+        seen.add(g.cl)
+        clusterStarts.push(g.cl)
       }
     }
     // Sort ascending for LTR Thai text
-    clusterStarts.sort((a, b) => a - b);
+    clusterStarts.sort((a, b) => a - b)
 
-    const segments: string[] = [];
+    const segments: string[] = []
     for (let i = 0; i < clusterStarts.length; i++) {
-      const start = clusterStarts[i]!;
-      const end = i + 1 < clusterStarts.length ? clusterStarts[i + 1]! : text.length;
-      const seg = text.slice(start, end);
-      if (seg) segments.push(seg);
+      const start = clusterStarts[i]!
+      const end = i + 1 < clusterStarts.length ? clusterStarts[i + 1]! : text.length
+      const seg = text.slice(start, end)
+      if (seg) segments.push(seg)
     }
-    return segments;
+    return segments
   }
 
   /**
    * Fallback: split text into grapheme clusters using Intl.Segmenter.
    * Produces results very similar to HarfBuzz clusters for Thai script.
    */
-  static getGraphemeSegments(text: string): string[] {
-    return Array.from(TextShaper.graphemeSegmenter.segment(text)).map(s => s.segment);
+  static getGraphemeSegments (text: string): string[] {
+    return Array.from(TextShaper.graphemeSegmenter.segment(text)).map(s => s.segment)
   }
 }

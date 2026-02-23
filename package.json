@@ -1,6 +1,6 @@
 {
   "name": "lynpdf",
-  "version": "0.1.0",
+  "version": "2.1.0",
   "description": "LynPDF Creator — Convert HTML/CSS to PDF with Thai language support, color emoji, and flexbox layout",
   "module": "src/index.ts",
   "main": "dist/index.js",
@@ -25,7 +25,9 @@
     "build": "bun build src/index.ts src/cli.ts --outdir dist --target node --format esm && tsc --emitDeclarationOnly --outDir dist",
     "dev": "bun run run-examples.ts",
     "cli": "bun run src/cli.ts",
-    "examples": "bun run run-examples.ts",
+    "examples": "bun run tests/run-examples.ts",
+    "color-diagnostic": "bun run tests/color-diagnostic.ts",
+    "color-test": "bun run tests/color-test.ts",
     "test": "bun test tests/unit",
     "test:visual": "bun run tests/run-tests.ts",
     "test:all": "bun test tests/unit && bun run tests/run-tests.ts",

@@ -17,23 +17,273 @@
 - 🔤 **Font Support** — TTF, **OTF** (IBM Plex Sans), and **Variable Fonts** (Inter Variable) with automatic weight/style resolution
 - 📊 **Tables** — Full HTML tables with `thead` repeat on every page; disable with `-lynpdf-repeat: none`
 - 🖼️ **SVG & Images** — Inline SVG vector rendering, `<img>` tags, CSS backgrounds
-- 🖨️ **Page Rules** — `@page` margins (pt/px/in/cm/mm), `counter(page)` / `counter(pages)`, top/bottom headers & footers
+- 🖨️ **Page Rules** — `@page` margins (pt/px/in/cm/mm), **`@page { size }`** — named sizes (A0–A6, letter, legal, ledger, tabloid), orientation keywords (`landscape` / `portrait`), explicit dimensions (pt/cm/mm/px/in); `counter(page)` / `counter(pages)`, top/bottom headers & footers
 - 📋 **PDF Metadata** — Title, Author, Subject, Keywords auto-read from HTML `<meta>` tags
 - 🔌 **Dual Interface** — CLI tool or programmatic TypeScript API
 - 📦 **NPM Ready** — Publish-ready package with full TypeScript types
 - ⚡ **Fast** — Bun runtime, font metric caching, Twemoji PNG caching (~500–700 ms for complex documents)
 
+## Requirements
+
+| Requirement | Version | Notes |
+|-------------|---------|-------|
+| **[Bun](https://bun.sh)** | ≥ 1.0 | Recommended runtime — fast, native ESM, built-in TypeScript |
+| **Node.js** | ≥ 18 | Alternative runtime; required for `Intl.Segmenter` (th-TH) and native ESM |
+| **TypeScript** | ≥ 5.0 | Peer dependency; needed only for type declarations |
+
+> **WebAssembly note:** `harfbuzzjs` (OpenType shaping) and `yoga-layout` (Flexbox engine) ship as **self-contained WASM binaries** bundled inside the npm package. You do **not** need to install system-level `libharfbuzz` or `libyoga`. Bun ≥ 1.0 and Node.js ≥ 18 already ship with WebAssembly support built in — no extra system packages required.
+
+### Runtime Dependencies
+
+Installed automatically by your package manager:
+
+| Package | What it does |
+|---------|-------------|
+| [`pdfkit`](https://pdfkit.org/) | Core PDF generation library (pure JS) |
+| [`yoga-layout`](https://github.com/nicklockwood/yoga) | Meta's CSS Flexbox engine compiled to WASM — no native compile step |
+| [`harfbuzzjs`](https://github.com/harfbuzz/harfbuzzjs) | HarfBuzz OpenType shaping compiled to WASM — Thai floating vowels, stacked tone marks, fi/fl ligatures, kerning — **no `libharfbuzz-dev` needed** |
+| [`fontkit`](https://github.com/foliojs/fontkit) | TTF/OTF/Variable font parser and glyph metrics (pure JS) |
+| [`parse5`](https://github.com/inikulin/parse5) | Spec-compliant HTML5 parser (pure JS) |
+| [`css-tree`](https://github.com/csstree/csstree) | CSS parser and AST toolkit (pure JS) |
+| [`svg-to-pdfkit`](https://github.com/alafr/SVG-to-PDFKit) | Inline SVG vector rendering (pure JS) |
+| [`@twemoji/parser`](https://github.com/jdecked/twemoji) | Color emoji parser; PNGs are fetched from CDN and cached locally on first run |
+
+---
+
 ## Installation
 
+### macOS
+
 ```bash
-# Using bun
+# 1. Install Homebrew (if not already installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# 2. Install Bun
+brew install bun
+# — OR — official universal installer:
+curl -fsSL https://bun.sh/install | bash
+
+# 3. (Optional) Install Node.js if you prefer npm / pnpm / yarn
+brew install node           # installs Node.js 22 LTS
+
+# 4. Add LynPDF to your project
 bun add lynpdf
+# npm install lynpdf
+# pnpm add lynpdf
+# yarn add lynpdf
+```
 
-# Using npm
+> Xcode Command Line Tools are **not** required — all shaping and layout code is bundled as WASM.
+
+---
+
+### Ubuntu / Debian
+
+```bash
+# 1. Update package lists
+sudo apt update && sudo apt upgrade -y
+
+# 2. Install required system packages
+#    - curl / unzip  — needed by Bun installer
+#    - libatomic1    — required by WASM runtime (harfbuzzjs / yoga-layout) on Linux kernels < 5.1
+#    - libpng-dev / libjpeg-dev — optional: needed by pdfkit's image pipeline for PNG/JPEG embedding
+sudo apt install -y curl unzip libatomic1 libpng-dev libjpeg-dev
+
+# 3. Install Bun
+curl -fsSL https://bun.sh/install | bash
+# Reload PATH so `bun` is available
+source ~/.bashrc        # or restart the terminal
+
+# 4. (Optional) Install Node.js 20+ via NodeSource
+curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
+sudo apt install -y nodejs
+
+# 5. Add LynPDF to your project
+bun add lynpdf
+# npm install lynpdf
+```
+
+> `build-essential`, `libharfbuzz-dev`, `libfreetype-dev`, and `libfontconfig-dev` are **not** required — HarfBuzz and Yoga ship as self-contained WASM binaries inside the package.
+>
+> **On older Linux kernels (< 5.1) or minimal container images**, `libatomic1` may be needed for WASM atomic operations. Most Ubuntu 20.04+ and Debian 11+ systems already have it; install it explicitly if you see a WASM/atomics error at runtime.
+
+---
+
+### Fedora / RHEL / CentOS Stream
+
+```bash
+# 1. Install required system packages
+#    libatomic — WASM atomic support on older kernels
+sudo dnf install -y curl unzip libatomic
+
+# 2. Install Bun
+curl -fsSL https://bun.sh/install | bash
+source ~/.bashrc
+
+# 3. (Optional) Install Node.js via dnf
+sudo dnf install -y nodejs npm       # Node.js 20+ on Fedora 38+
+
+# 4. Add LynPDF to your project
+bun add lynpdf
+# npm install lynpdf
+```
+
+---
+
+### Arch Linux / Manjaro
+
+```bash
+# 1. Install system packages
+#    libatomic_ops — WASM atomic support
+sudo pacman -S --needed libatomic_ops
+
+# 2. Install Bun from AUR
+yay -S bun-bin
+# — OR — official installer:
+curl -fsSL https://bun.sh/install | bash
+
+# 3. (Optional) Node.js from official repos
+sudo pacman -S nodejs npm
+
+# 4. Add LynPDF to your project
+bun add lynpdf
+```
+
+---
+
+### Windows
+
+**Recommended: use WSL 2 (Ubuntu)** for the best compatibility, then follow the Ubuntu steps above.
+
+**Native Windows (PowerShell / winget):**
+
+```powershell
+# Install Bun (Windows 10/11 — requires Windows 10 v1903+ for WASM support)
+powershell -c "irm bun.sh/install.ps1 | iex"
+# Restart shell so `bun` is on PATH, then:
+bun add lynpdf
+```
+
+```powershell
+# Alternative — Node.js via winget
+winget install OpenJS.NodeJS.LTS
 npm install lynpdf
+```
 
-# Using pnpm
-pnpm add lynpdf
+> WebAssembly is supported natively by V8 on Windows 10 v1903+ and Windows 11. No Visual Studio Build Tools or MSYS2 are needed.
+
+---
+
+### Docker
+
+**Using Bun:**
+
+```dockerfile
+FROM oven/bun:1 AS base
+WORKDIR /app
+
+COPY package.json bun.lockb ./
+RUN bun install --frozen-lockfile
+
+COPY . .
+RUN bun run build
+
+# --- production stage ---
+FROM oven/bun:1-slim
+WORKDIR /app
+COPY --from=base /app/dist ./dist
+COPY --from=base /app/fonts ./fonts
+COPY --from=base /app/node_modules ./node_modules
+
+ENTRYPOINT ["bun", "dist/cli.js"]
+```
+
+**Using Node.js 20:**
+
+```dockerfile
+FROM node:20-slim
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY dist ./dist
+COPY fonts ./fonts
+
+ENTRYPOINT ["node", "dist/cli.js"]
+```
+
+> Neither image needs extra system packages. All native code (HarfBuzz, Yoga) is already compiled to WASM inside the npm tarballs.
+>
+> If you use a minimal base image (e.g. `alpine` or `debian:slim`) and hit a WASM atomics error, add `libatomic1` (Debian/Ubuntu) or `libatomic` (Alpine: `apk add libatomic`) to your image.
+
+---
+
+### VS Code Dev Container
+
+This repository includes a ready-to-use **Dev Container** configuration in [`.devcontainer/`](.devcontainer/).
+
+**Requirements:**
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (macOS/Windows) or Docker Engine (Linux)
+- VS Code with the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+
+**What the container includes:**
+
+| Component | Version / Notes |
+|-----------|----------------|
+| Base OS | Ubuntu 24.04 (Noble) |
+| Bun | Latest stable |
+| Node.js | 20 LTS (npm/pnpm fallback) |
+| `libatomic1` | WASM atomic ops (Linux kernel compat) |
+| `libpng-dev` / `libjpeg-dev` | PNG/JPEG image embedding for pdfkit |
+| Locale | `en_US.UTF-8` + `th_TH.UTF-8` (for `Intl.Segmenter`) |
+| Shell | zsh + Oh My Zsh |
+| VS Code extensions | TypeScript, ESLint, Prettier, Bun, GitLens, PDF viewer, etc. |
+
+**Getting started:**
+
+```bash
+# 1. Open the project in VS Code
+code /path/to/lynpdf
+
+# 2. When prompted "Reopen in Container" — click it
+#    OR: Cmd/Ctrl+Shift+P → "Dev Containers: Reopen in Container"
+
+# 3. Wait for the image to build (~2–3 min on first run)
+#    bun install runs automatically via postCreateCommand
+
+# 4. You're ready — open a terminal inside VS Code and run:
+bun run examples        # generate all demo PDFs
+bun test                # run unit tests
+bun run test:visual     # run visual / integration tests
+```
+
+---
+
+### Development Setup (from source)
+
+```bash
+# 1. Clone the repository
+git clone https://github.com/your-org/lynpdf.git
+cd lynpdf
+
+# 2. Install all dependencies (dev + prod)
+bun install
+
+# 3. Run the full example suite (generates PDFs in the project root)
+bun run examples
+
+# 4. Run unit tests
+bun test
+
+# 5. Run visual / integration tests (generates PDF fixtures in tests/)
+bun run test:visual
+
+# 6. Type-check without emitting files
+bun run typecheck
+
+# 7. Build for distribution (outputs to dist/)
+bun run build
 ```
 
 ## Quick Start
@@ -165,7 +415,7 @@ const creator = new PDFCreator(options?: PDFOptions)
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `pageSize` | `string \| [number, number]` | `'A4'` | Paper size: `'A4'`, `'A3'`, `'letter'`, `[w, h]` |
+| `pageSize` | `string \| [number, number]` | `'A4'` | Initial paper size: `'A4'`, `'A3'`, `'letter'`, `[w, h]` in points; overridden by `@page { size }` in CSS |
 | `margin` | `number \| [t, r, b, l]` | `50` | Page margins in points (`@page` overrides this) |
 | `css` | `string` | `undefined` | Additional CSS injected after HTML styles |
 | `defaultFont` | `string` | `'Sarabun'` | Default font family name |
@@ -191,7 +441,7 @@ const creator = new PDFCreator(options?: PDFOptions)
 | **Box Model** | `width`, `height`, `min/max-width/height`, `padding`, `margin`, `border`, `border-radius`, `border-collapse`, `overflow` |
 | **Typography** | `font-family`, `font-size`, `font-weight`, `font-style`, `line-height`, `text-align` (incl. `justify`), `color`, `letter-spacing`, `word-spacing`, `text-decoration` |
 | **Visual** | `background-color` (hex/rgb/rgba/named), `opacity`, `border-radius`, `border` (shorthand + sides) |
-| **Page Media** | `@page` (margin in pt/px/in/cm/mm), `@page :first`, `page-break-before/after/inside`, `break-before/inside`, `counter(page)`, `counter(pages)`, `orphans`, `widows` |
+| **Page Media** | `@page` (margin in pt/px/in/cm/mm; **`size`** — named A0–A6/letter/legal/ledger/tabloid, `landscape`/`portrait` keywords, explicit dimensions), `@page :first`, `page-break-before/after/inside`, `break-before/inside`, `counter(page)`, `counter(pages)`, `orphans`, `widows` |
 | **LynPDF Custom** | `-lynpdf-repeat: none` — disable thead repeat on a table or thead element |
 
 ## Supported HTML Elements
@@ -267,25 +517,6 @@ CSS  → css-tree → Stylesheet AST
 - **[css-tree](https://github.com/csstree/csstree)** — CSS parser and AST toolkit
 - **[svg-to-pdfkit](https://github.com/alafr/SVG-to-PDFKit)** — Inline SVG vector rendering
 - **`Intl.Segmenter`** — Thai word segmentation (built-in, locale: th-TH)
-
-## Development
-
-```bash
-# Install dependencies
-bun install
-
-# Run all examples
-bun run examples
-
-# Generate a single PDF via CLI
-bun run cli -- examples/demo-single-page.html -c examples/styles.css -o test.pdf
-
-# Type check
-bun run typecheck
-
-# Build for distribution
-bun run build
-```
 
 ## License
 

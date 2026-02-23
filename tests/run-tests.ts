@@ -58,7 +58,7 @@ const c = {
 // ─── Assertion Helpers ───────────────────────────────────────
 
 /** Check that PDF text content contains a specific string */
-async function assertPdfContainsText(buf: Buffer, needle: string): Promise<AssertionResult> {
+async function assertPdfContainsText (buf: Buffer, needle: string): Promise<AssertionResult> {
   // Simple heuristic: look for the string in the raw PDF bytes
   const raw = buf.toString('latin1')
   const found = raw.includes(needle)
@@ -70,7 +70,7 @@ async function assertPdfContainsText(buf: Buffer, needle: string): Promise<Asser
 }
 
 /** Check file size is within range */
-function assertFileSize(buf: Buffer, minKB: number, maxKB: number): AssertionResult {
+function assertFileSize (buf: Buffer, minKB: number, maxKB: number): AssertionResult {
   const kb = buf.length / 1024
   const ok = kb >= minKB && kb <= maxKB
   return {
@@ -81,7 +81,7 @@ function assertFileSize(buf: Buffer, minKB: number, maxKB: number): AssertionRes
 }
 
 /** Check page dimensions match expected (A4: 595.28 × 841.89) */
-function assertPageSize(pdf: PDFDocument, expectedW: number, expectedH: number, tolerance = 1): AssertionResult {
+function assertPageSize (pdf: PDFDocument, expectedW: number, expectedH: number, tolerance = 1): AssertionResult {
   const page = pdf.getPage(0)
   const { width, height } = page.getSize()
   const wOk = Math.abs(width - expectedW) <= tolerance
@@ -94,7 +94,7 @@ function assertPageSize(pdf: PDFDocument, expectedW: number, expectedH: number, 
 }
 
 /** Check page count */
-function assertPageCount(pdf: PDFDocument, expected: number): AssertionResult {
+function assertPageCount (pdf: PDFDocument, expected: number): AssertionResult {
   const actual = pdf.getPageCount()
   return {
     label: `Page count: ${actual} === ${expected}`,
@@ -104,7 +104,7 @@ function assertPageCount(pdf: PDFDocument, expected: number): AssertionResult {
 }
 
 /** Check page count is in range [min, max] */
-function assertPageCountRange(pdf: PDFDocument, min: number, max: number): AssertionResult {
+function assertPageCountRange (pdf: PDFDocument, min: number, max: number): AssertionResult {
   const actual = pdf.getPageCount()
   const ok = actual >= min && actual <= max
   return {
@@ -115,7 +115,7 @@ function assertPageCountRange(pdf: PDFDocument, min: number, max: number): Asser
 }
 
 /** Check that PDF has embedded fonts */
-async function assertHasEmbeddedFonts(buf: Buffer): Promise<AssertionResult> {
+async function assertHasEmbeddedFonts (buf: Buffer): Promise<AssertionResult> {
   const raw = buf.toString('latin1')
   const hasFont = raw.includes('/Type /Font') || raw.includes('/FontDescriptor')
   return {
@@ -125,7 +125,7 @@ async function assertHasEmbeddedFonts(buf: Buffer): Promise<AssertionResult> {
 }
 
 /** Check that PDF has images (for emoji or img tests) */
-async function assertHasImages(buf: Buffer): Promise<AssertionResult> {
+async function assertHasImages (buf: Buffer): Promise<AssertionResult> {
   const raw = buf.toString('latin1')
   const hasImage = raw.includes('/Subtype /Image') || raw.includes('/XObject')
   return {
@@ -322,6 +322,24 @@ const TEST_CASE_CONFIG: Record<string, Partial<TestCase>> = {
       assertFileSize(buf, 10, 2000),
     ],
   },
+  'test-16-page-margin.html': {
+    name: 'Page Margins',
+    minPages: 2, maxPages: 6,
+    assertions: async (pdf, buf) => [
+      assertPageSize(pdf, 595.28, 841.89),
+      assertPageCountRange(pdf, 2, 6),
+      assertFileSize(buf, 5, 2000),
+    ],
+  },
+  'test-17-page-orientation.html': {
+    name: 'Page Orientation (Landscape)',
+    minPages: 1, maxPages: 3,
+    assertions: async (pdf, buf) => [
+      // A4 landscape: 841.89 × 595.28 pt
+      assertPageSize(pdf, 841.89, 595.28),
+      assertFileSize(buf, 5, 2000),
+    ],
+  },
 }
 
 /**
@@ -329,7 +347,7 @@ const TEST_CASE_CONFIG: Record<string, Partial<TestCase>> = {
  * Known fixtures get custom assertions from TEST_CASE_CONFIG.
  * Unknown fixtures get sensible defaults so new tests are never silently skipped.
  */
-function discoverTestCases(): TestCase[] {
+function discoverTestCases (): TestCase[] {
   const fixturesDir = path.join(__dirname, 'fixtures')
   const htmlFiles = fs.readdirSync(fixturesDir)
     .filter(f => f.startsWith('test-') && f.endsWith('.html'))
@@ -366,7 +384,7 @@ function discoverTestCases(): TestCase[] {
 
 // ─── Runner ──────────────────────────────────────────────────
 
-async function runTest(tc: TestCase, creator: PDFCreator, css: string): Promise<TestResult> {
+async function runTest (tc: TestCase, creator: PDFCreator, css: string): Promise<TestResult> {
   const htmlPath = path.join(__dirname, 'fixtures', tc.htmlFile)
   const outPath = path.join(__dirname, 'output', tc.htmlFile.replace('.html', '.pdf'))
 
@@ -430,7 +448,7 @@ async function runTest(tc: TestCase, creator: PDFCreator, css: string): Promise<
   return result
 }
 
-async function main() {
+async function main () {
   console.log(c.bold('\n╔══════════════════════════════════════════════════════════╗'))
   console.log(c.bold('║          LynPDF Creator — Test Suite                     ║'))
   console.log(c.bold('╚══════════════════════════════════════════════════════════╝\n'))

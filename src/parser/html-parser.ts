@@ -1,4 +1,5 @@
-import * as parse5 from 'parse5';
+import type { DefaultTreeAdapterMap } from 'parse5'
+import { parse } from 'parse5'
 
 export class HTMLParser {
   /**
@@ -6,7 +7,7 @@ export class HTMLParser {
    * @param html The HTML string to parse.
    * @returns The parsed Document object.
    */
-  static parse(html: string): parse5.Document {
-    return parse5.parse(html);
+  static parse (html: string): DefaultTreeAdapterMap['document'] {
+    return parse(html)
   }
 }

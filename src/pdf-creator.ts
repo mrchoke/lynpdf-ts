@@ -22,7 +22,7 @@ export interface PDFOptions {
   verbose?: boolean
   /** Enable PDF compression (default: true) */
   compress?: boolean  /** PDF version: '1.3' | '1.4' | '1.5' | '1.6' | '1.7' | '1.7ext3' (default: '1.7') */
-  pdfVersion?: string;  /** PDF metadata overrides. If not provided, values from HTML <meta> tags are used. */
+  pdfVersion?: string  /** PDF metadata overrides. If not provided, values from HTML <meta> tags are used. */
   metadata?: {
     Title?: string
     Author?: string
@@ -81,9 +81,9 @@ export class PDFCreator {
    * @param outputPath Output file path for the PDF
    * @returns PDFResult with metadata
    */
-  async createPDF(html: string, css: string, outputPath: string): Promise<PDFResult> {
+  async createPDF (html: string, css: string, outputPath: string): Promise<PDFResult> {
     const t0 = performance.now()
-    const log = this.options.verbose ? console.log.bind(console) : () => {}
+    const log = this.options.verbose ? console.log.bind(console) : () => { }
 
     log('1. Parsing HTML...')
     const dom = HTMLParser.parse(html)
@@ -148,10 +148,10 @@ export class PDFCreator {
       },
     }
     const renderer = new PDFRenderer()
-    await renderer.render(layoutResult.rootNode, outputPath, layoutResult.pageRules, renderOpts, layoutResult.fontFaceRules, layoutResult.pageMargin)
+    await renderer.render(layoutResult.rootNode, outputPath, layoutResult.pageRules, renderOpts, layoutResult.fontFaceRules, layoutResult.pageMargin, layoutResult.pageWidth, layoutResult.pageHeight)
 
     const elapsed = performance.now() - t0
-    const pages = Math.ceil(layoutResult.rootNode.height / 841.89)
+    const pages = Math.ceil(layoutResult.rootNode.height / layoutResult.pageHeight)
     log(`PDF created: ${outputPath} (${pages} page(s), ${elapsed.toFixed(0)}ms)`)
 
     return { path: outputPath, pages, elapsed }
@@ -164,7 +164,7 @@ export class PDFCreator {
    * @param outputPath Output file path for the PDF
    * @returns PDFResult with metadata
    */
-  async createPDFFromFile(htmlPath: string, cssPath: string | undefined, outputPath: string): Promise<PDFResult> {
+  async createPDFFromFile (htmlPath: string, cssPath: string | undefined, outputPath: string): Promise<PDFResult> {
     const html = fs.readFileSync(htmlPath, 'utf-8')
 
     // Extract linked stylesheets from HTML
@@ -196,7 +196,7 @@ export class PDFCreator {
    * @param css Raw CSS string
    * @returns Buffer containing the PDF data
    */
-  async createPDFBuffer(html: string, css: string): Promise<Buffer> {
+  async createPDFBuffer (html: string, css: string): Promise<Buffer> {
     const tmpPath = `/tmp/lynpdf_${Date.now()}_${Math.random().toString(36).slice(2)}.pdf`
     try {
       await this.createPDF(html, css, tmpPath)

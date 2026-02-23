@@ -1,0 +1,114 @@
+// For format details, see https://aka.ms/devcontainer.json
+{
+  "name": "LynPDF (Bun + TypeScript)",
+  // Build from our custom Dockerfile in this folder
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": "..",
+    "args": {
+      "USERNAME": "dev",
+      "USER_UID": "1000",
+      "USER_GID": "1000"
+    }
+  },
+  // Run as non-root dev user
+  "remoteUser": "dev",
+  // Mount the project source into /workspace
+  "workspaceFolder": "/workspace",
+  "workspaceMount": "source=${localWorkspaceFolder},target=/workspace,type=bind,consistency=cached",
+  // ── Port forwards ────────────────────────────────────────────────────────────
+  // Uncomment if you add an HTTP server (e.g. for live PDF preview)
+  // "forwardPorts": [3000],
+  // ── Life-cycle hooks ─────────────────────────────────────────────────────────
+  "postCreateCommand": "bun install",
+  "postStartCommand": "echo '✅ LynPDF devcontainer ready. Run: bun run examples'",
+  // ── VS Code settings & extensions ────────────────────────────────────────────
+  "customizations": {
+    "vscode": {
+      "settings": {
+        // Use workspace TypeScript for full tsconfig support
+        "typescript.tsdk": "node_modules/typescript/lib",
+        "typescript.enablePromptUseWorkspaceTsdk": true,
+        // Editor defaults
+        "editor.formatOnSave": true,
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.tabSize": 2,
+        "editor.insertSpaces": true,
+        "editor.rulers": [
+          100
+        ],
+        // ESLint on save
+        "editor.codeActionsOnSave": {
+          "source.fixAll.eslint": "explicit"
+        },
+        // Terminal: use zsh inside container
+        "terminal.integrated.defaultProfile.linux": "zsh",
+        "terminal.integrated.profiles.linux": {
+          "zsh": {
+            "path": "/usr/bin/zsh"
+          }
+        },
+        // Bun test runner integration
+        "bun.test.filePattern": "tests/unit/*.test.ts",
+        // File associations
+        "files.associations": {
+          "*.html": "html",
+          "*.css": "css"
+        },
+        // Exclude generated/cache dirs from explorer
+        "files.exclude": {
+          "node_modules": true,
+          "dist": true,
+          "cache": true
+        },
+        "search.exclude": {
+          "node_modules": true,
+          "dist": true,
+          "cache": true,
+          "bun.lock": true
+        }
+      },
+      "extensions": [
+        // ── TypeScript / JavaScript ───────────────────────────────────────────
+        "dbaeumer.vscode-eslint",
+        "esbenp.prettier-vscode",
+        // ── Bun ──────────────────────────────────────────────────────────────
+        "oven.bun-vscode",
+        // ── Git ──────────────────────────────────────────────────────────────
+        "eamodio.gitlens",
+        "mhutchie.git-graph",
+        // ── HTML / CSS ───────────────────────────────────────────────────────
+        "formulahendry.auto-close-tag",
+        "formulahendry.auto-rename-tag",
+        "ecmel.vscode-html-css",
+        "bradlc.vscode-tailwindcss",
+        // ── Markdown ─────────────────────────────────────────────────────────
+        "yzhang.markdown-all-in-one",
+        "bierner.markdown-preview-github-styles",
+        // ── PDF viewer (preview generated PDFs inside VS Code) ────────────────
+        "tomoki1207.pdf",
+        // ── Utilities ────────────────────────────────────────────────────────
+        "streetsidesoftware.code-spell-checker",
+        "usernamehw.errorlens",
+        "christian-kohler.path-intellisense",
+        "wayou.vscode-todo-highlight"
+      ]
+    }
+  },
+  // ── Container features ───────────────────────────────────────────────────────
+  // (Dockerfile already installs Bun + Node; these add extra shell goodies)
+  "features": {
+    // Useful git utilities (delta diff pager, gh CLI)
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  // ── Environment variables ────────────────────────────────────────────────────
+  "remoteEnv": {
+    "NODE_ENV": "development",
+    // Tell harfbuzzjs / bun where to cache WASM compilation
+    "BUN_INSTALL_CACHE_DIR": "/workspace/.bun-cache"
+  },
+  // ── Container resource hints (for Docker Desktop) ────────────────────────────
+  "hostRequirements": {
+    "memory": "2gb"
+  }
+}

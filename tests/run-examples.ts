@@ -5,10 +5,10 @@
  */
 
 import * as fs from 'fs'
-import { PDFCreator } from './src/pdf-creator'
-import { TextShaper } from './src/text/text-shaper'
+import { PDFCreator } from '../src/pdf-creator'
+import { TextShaper } from '../src/text/text-shaper'
 
-async function main() {
+async function main () {
   const creator = new PDFCreator({ verbose: true })
 
   // Test Thai word segmentation
