@@ -1,0 +1,1563 @@
+<!DOCTYPE html>
+<html lang="th">
+
+<head>
+  <meta charset="UTF-8">
+  <meta
+    name="viewport"
+    content="width=device-width, initial-scale=1.0"
+  >
+  <title>LynPDF Creator — HTML/CSS & Markdown → PDF</title>
+  <meta
+    name="description"
+    content="LynPDF Creator: Convert HTML/CSS & Markdown to PDF with Thai language support, color emoji, flexbox layout, and OpenType shaping. No headless browser required."
+  >
+  <link
+    rel="icon"
+    href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🐱</text></svg>"
+  >
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-dark: #4f46e5;
+      --primary-light: #818cf8;
+      --bg: #0f172a;
+      --bg-card: #1e293b;
+      --bg-code: #0d1117;
+      --text: #e2e8f0;
+      --text-muted: #94a3b8;
+      --accent: #f59e0b;
+      --success: #10b981;
+      --border: #334155;
+      --gradient-1: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+      --gradient-2: linear-gradient(135deg, #f59e0b 0%, #ef4444 100%);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.7;
+      overflow-x: hidden;
+    }
+
+    /* ── Nav ─────────────────────────────── */
+    nav {
+      position: fixed;
+      top: 0;
+      width: 100%;
+      background: rgba(15, 23, 42, 0.85);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      z-index: 100;
+      padding: 0 2rem;
+    }
+
+    nav .nav-inner {
+      max-width: 1200px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    nav .logo {
+      font-size: 1.3rem;
+      font-weight: 800;
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+
+    nav .nav-links {
+      display: flex;
+      gap: 1.5rem;
+      list-style: none;
+    }
+
+    nav .nav-links a {
+      color: var(--text-muted);
+      text-decoration: none;
+      font-size: 0.9rem;
+      transition: color 0.2s;
+    }
+
+    nav .nav-links a:hover {
+      color: #fff;
+    }
+
+    /* ── Hero ─────────────────────────────── */
+    .hero {
+      padding: 10rem 2rem 6rem;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 800px;
+      height: 800px;
+      background: radial-gradient(circle, rgba(99, 102, 241, 0.15) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero h1 {
+      font-size: 3.5rem;
+      font-weight: 900;
+      margin-bottom: 1rem;
+      background: var(--gradient-1);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero .tagline {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      max-width: 650px;
+      margin: 0 auto 2rem;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.75rem 1.75rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      text-decoration: none;
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn-primary {
+      background: var(--gradient-1);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+    }
+
+    .btn-primary:hover {
+      box-shadow: 0 6px 30px rgba(99, 102, 241, 0.5);
+    }
+
+    .btn-secondary {
+      background: var(--bg-card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--primary-light);
+    }
+
+    .install-box {
+      margin: 2.5rem auto 0;
+      max-width: 420px;
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1rem 1.5rem;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+      font-size: 0.95rem;
+      color: var(--success);
+      position: relative;
+      cursor: pointer;
+      transition: border-color 0.2s;
+    }
+
+    .install-box:hover {
+      border-color: var(--primary-light);
+    }
+
+    .install-box .dollar {
+      color: var(--text-muted);
+    }
+
+    .install-box .copy-hint {
+      position: absolute;
+      right: 1rem;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--text-muted);
+      font-size: 0.75rem;
+    }
+
+    /* ── Section ──────────────────────────── */
+    section {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 5rem 2rem;
+    }
+
+    .section-title {
+      font-size: 2.2rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+
+    .section-subtitle {
+      color: var(--text-muted);
+      font-size: 1.05rem;
+      margin-bottom: 3rem;
+    }
+
+    /* ── Features Grid ────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 1.5rem;
+    }
+
+    .feature-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 2rem;
+      transition: transform 0.2s, border-color 0.2s;
+    }
+
+    .feature-card:hover {
+      transform: translateY(-4px);
+      border-color: var(--primary-light);
+    }
+
+    .feature-icon {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+      display: block;
+    }
+
+    .feature-card h3 {
+      font-size: 1.1rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+
+    .feature-card p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    /* ── Code Block ───────────────────────── */
+    .code-section {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2rem;
+      align-items: start;
+    }
+
+    @media (max-width: 768px) {
+      .code-section {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .code-block {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .code-block-header {
+      background: rgba(51, 65, 85, 0.5);
+      padding: 0.6rem 1rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .code-block-header .dots {
+      display: flex;
+      gap: 6px;
+    }
+
+    .code-block-header .dots span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+    }
+
+    .code-block-header .dots span:nth-child(1) {
+      background: #ef4444;
+    }
+
+    .code-block-header .dots span:nth-child(2) {
+      background: #f59e0b;
+    }
+
+    .code-block-header .dots span:nth-child(3) {
+      background: #10b981;
+    }
+
+    .code-block pre {
+      padding: 1.25rem;
+      overflow-x: auto;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      font-family: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace;
+    }
+
+    .code-block code {
+      color: var(--text);
+    }
+
+    .code-block .kw {
+      color: #c084fc;
+    }
+
+    .code-block .fn {
+      color: #67e8f9;
+    }
+
+    .code-block .str {
+      color: #86efac;
+    }
+
+    .code-block .cm {
+      color: #64748b;
+    }
+
+    .code-block .op {
+      color: #f472b6;
+    }
+
+    .code-block .num {
+      color: #fbbf24;
+    }
+
+    .code-block .type {
+      color: #60a5fa;
+    }
+
+    /* ── Examples ──────────────────────────── */
+    .examples-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .example-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.5rem;
+      text-decoration: none;
+      color: var(--text);
+      transition: transform 0.2s, border-color 0.2s;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+    }
+
+    .example-card:hover {
+      transform: translateY(-3px);
+      border-color: var(--primary-light);
+    }
+
+    .example-icon {
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .example-card h4 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .example-card p {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Table ─────────────────────────────── */
+    .prop-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 1.5rem;
+      font-size: 0.9rem;
+    }
+
+    .prop-table th,
+    .prop-table td {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .prop-table th {
+      color: var(--accent);
+      font-weight: 600;
+      font-size: 0.8rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .prop-table td:first-child {
+      font-family: 'SF Mono', monospace;
+      color: var(--primary-light);
+      white-space: nowrap;
+    }
+
+    .prop-table tr:hover {
+      background: rgba(99, 102, 241, 0.05);
+    }
+
+    /* ── Architecture ─────────────────────── */
+    .arch-diagram {
+      background: var(--bg-code);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      font-family: 'SF Mono', monospace;
+      font-size: 0.85rem;
+      line-height: 1.8;
+      color: var(--text-muted);
+      overflow-x: auto;
+      white-space: pre;
+    }
+
+    .arch-diagram .highlight {
+      color: var(--primary-light);
+      font-weight: 600;
+    }
+
+    .arch-diagram .accent {
+      color: var(--accent);
+    }
+
+    /* ── CLI Ref ───────────────────────────── */
+    .cli-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 1rem;
+    }
+
+    .cli-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+    }
+
+    .cli-item code {
+      color: var(--primary-light);
+      font-family: 'SF Mono', monospace;
+      font-size: 0.85rem;
+    }
+
+    .cli-item p {
+      color: var(--text-muted);
+      font-size: 0.85rem;
+      margin-top: 0.25rem;
+    }
+
+    /* ── Fonts Section ────────────────────── */
+    .fonts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 1rem;
+    }
+
+    .font-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.25rem;
+    }
+
+    .font-card h4 {
+      font-size: 0.95rem;
+      margin-bottom: 0.3rem;
+    }
+
+    .font-card .font-meta {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+    }
+
+    .font-badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.5rem;
+      border-radius: 9999px;
+      margin-right: 0.3rem;
+      margin-top: 0.4rem;
+    }
+
+    .badge-google {
+      background: rgba(16, 185, 129, 0.15);
+      color: var(--success);
+    }
+
+    .badge-tlwg {
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--primary-light);
+    }
+
+    .badge-otf {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--accent);
+    }
+
+    /* ── Footer ────────────────────────────── */
+    footer {
+      text-align: center;
+      padding: 3rem 2rem;
+      border-top: 1px solid var(--border);
+      color: var(--text-muted);
+      font-size: 0.85rem;
+    }
+
+    footer a {
+      color: var(--primary-light);
+      text-decoration: none;
+    }
+
+    footer a:hover {
+      text-decoration: underline;
+    }
+
+    /* ── Responsive ────────────────────────── */
+    @media (max-width: 640px) {
+      .hero h1 {
+        font-size: 2.2rem;
+      }
+
+      .hero .tagline {
+        font-size: 1rem;
+      }
+
+      nav .nav-links {
+        gap: 0.8rem;
+      }
+
+      nav .nav-links a {
+        font-size: 0.8rem;
+      }
+
+      .section-title {
+        font-size: 1.7rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <!-- ═══ Nav ═══ -->
+  <nav>
+    <div class="nav-inner">
+      <a
+        href="#"
+        class="logo"
+      >🐱 LynPDF</a>
+      <ul class="nav-links">
+        <li><a href="#features">Features</a></li>
+        <li><a href="#quickstart">Quick Start</a></li>
+        <li><a href="#examples">Examples</a></li>
+        <li><a href="#api">API</a></li>
+        <li><a href="#cli">CLI</a></li>
+        <li><a href="#architecture">Architecture</a></li>
+        <li><a
+            href="https://github.com/nicenemo/lynpdf"
+            target="_blank"
+          >GitHub ↗</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <!-- ═══ Hero ═══ -->
+  <section class="hero">
+    <h1>LynPDF Creator 🐱</h1>
+    <p class="tagline">HTML/CSS &amp; Markdown → PDF converter with Thai language support, color emoji, flexbox layout,
+      and OpenType shaping — no headless browser required.</p>
+    <div class="hero-buttons">
+      <a
+        href="https://github.com/nicenemo/lynpdf"
+        class="btn btn-primary"
+        target="_blank"
+      >⭐ View on GitHub</a>
+      <a
+        href="https://www.npmjs.com/package/lynpdf"
+        class="btn btn-secondary"
+        target="_blank"
+      >📦 npm package</a>
+    </div>
+    <div
+      class="install-box"
+      onclick="navigator.clipboard.writeText('bun add lynpdf')"
+    >
+      <span class="dollar">$</span> bun add lynpdf
+      <span class="copy-hint">click to copy</span>
+    </div>
+  </section>
+
+  <!-- ═══ Features ═══ -->
+  <section id="features">
+    <h2 class="section-title">Features</h2>
+    <p class="section-subtitle">Everything you need to produce professional PDFs from HTML, CSS, and Markdown.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">📄</span>
+        <h3>HTML + CSS → PDF</h3>
+        <p>Convert standard HTML/CSS to pixel-perfect PDFs without any headless browser. Pure JavaScript/WASM pipeline.
+        </p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🇹🇭</span>
+        <h3>Thai Language</h3>
+        <p>20+ Thai font families (Google Fonts + TLWG), word segmentation via <code>Intl.Segmenter</code>, stacked
+          vowels/tone marks, and <code>text-align: justify</code>.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🕉️</span>
+        <h3>Pali / Sanskrit</h3>
+        <p>Correct rendering of นิคหิต ( ํ ), พินทุ ( ฺ ), ทัณฑฆาต ( ์ ), stacked diacritics via HarfBuzz GSUB/GPOS.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">😀</span>
+        <h3>Color Emoji</h3>
+        <p>Full-color Twemoji PNG rendering with auto-download and local caching.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📐</span>
+        <h3>Flexbox Layout</h3>
+        <p>Powered by Meta's Yoga Layout engine (C++ compiled to WASM) for accurate CSS Flexbox positioning.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔡</span>
+        <h3>OpenType Shaping</h3>
+        <p>HarfBuzz GSUB (ligatures: fi fl ff) + GPOS (kerning pairs) for all fonts via WebAssembly.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔤</span>
+        <h3>Font Support</h3>
+        <p>TTF, OTF (IBM Plex Sans), and Variable Fonts (Inter Variable) with automatic weight/style resolution.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📊</span>
+        <h3>Tables</h3>
+        <p>Full HTML tables with <code>&lt;thead&gt;</code> repeat on every page; disable with
+          <code>-lynpdf-repeat: none</code>.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🖼️</span>
+        <h3>SVG &amp; Images</h3>
+        <p>Inline SVG vector rendering, <code>&lt;img&gt;</code> tags, and CSS backgrounds.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🖨️</span>
+        <h3>Page Rules</h3>
+        <p><code>@page</code> margins, named sizes (A0–A6, letter, legal), landscape/portrait,
+          <code>counter(page)</code> headers &amp; footers.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📝</span>
+        <h3>Markdown → PDF</h3>
+        <p>Convert <code>.md</code> files directly; syntax highlighting (190+ languages), containers, GitHub Alerts,
+          color boxes, Mermaid diagrams.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">⚡</span>
+        <h3>Fast</h3>
+        <p>Bun runtime, font metric caching, Twemoji PNG caching (~500–700 ms for complex documents).</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Quick Start ═══ -->
+  <section id="quickstart">
+    <h2 class="section-title">Quick Start</h2>
+    <p class="section-subtitle">Get up and running in under a minute.</p>
+
+    <h3 style="margin-bottom: 1rem; color: var(--accent);">Installation</h3>
+    <div class="code-section">
+      <div class="code-block">
+        <div class="code-block-header">
+          <div class="dots"><span></span><span></span><span></span></div>
+          Bun (recommended)
+        </div>
+        <pre><code><span class="cm"># Install Bun</span>
+curl -fsSL https://bun.sh/install | bash
+
+<span class="cm"># Add LynPDF to your project</span>
+bun add lynpdf</code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-block-header">
+          <div class="dots"><span></span><span></span><span></span></div>
+          npm / pnpm / yarn
+        </div>
+        <pre><code><span class="cm"># npm</span>
+npm install lynpdf
+
+<span class="cm"># pnpm</span>
+pnpm add lynpdf
+
+<span class="cm"># yarn</span>
+yarn add lynpdf</code></pre>
+      </div>
+    </div>
+
+    <h3 style="margin: 3rem 0 1rem; color: var(--accent);">CLI Usage</h3>
+    <div
+      class="code-block"
+      style="max-width: 700px;"
+    >
+      <div class="code-block-header">
+        <div class="dots"><span></span><span></span><span></span></div>
+        Terminal
+      </div>
+      <pre><code><span class="cm"># Basic: HTML → PDF</span>
+lynpdf report.html
+
+<span class="cm"># With external CSS</span>
+lynpdf report.html -c styles.css -o output.pdf
+
+<span class="cm"># From stdin</span>
+<span class="kw">echo</span> <span class="str">"&lt;h1&gt;Hello PDF&lt;/h1&gt;"</span> | lynpdf --stdin -o hello.pdf
+
+<span class="cm"># Markdown → PDF (auto-detected by .md extension)</span>
+lynpdf README.md -o readme.pdf
+
+<span class="cm"># With page size and margin options</span>
+lynpdf invoice.html -c theme.css -o invoice.pdf --page-size A4 --margin 50</code></pre>
+    </div>
+
+    <h3 style="margin: 3rem 0 1rem; color: var(--accent);">API Usage</h3>
+    <div class="code-section">
+      <div class="code-block">
+        <div class="code-block-header">
+          <div class="dots"><span></span><span></span><span></span></div>
+          TypeScript — Basic
+        </div>
+        <pre><code><span class="kw">import</span> { <span class="type">PDFCreator</span> } <span class="kw">from</span> <span class="str">'lynpdf'</span>
+
+<span class="kw">const</span> creator = <span class="kw">new</span> <span class="fn">PDFCreator</span>()
+
+<span class="cm">// From strings</span>
+<span class="kw">await</span> creator.<span class="fn">createPDF</span>(
+  <span class="str">'&lt;h1&gt;Hello World&lt;/h1&gt;&lt;p&gt;สวัสดีชาวโลก 🌍&lt;/p&gt;'</span>,
+  <span class="str">'h1 { color: #1a1a2e; font-size: 28px; }'</span>,
+  <span class="str">'output.pdf'</span>
+)
+
+<span class="cm">// As buffer (for APIs / HTTP responses)</span>
+<span class="kw">const</span> buffer = <span class="kw">await</span> creator.<span class="fn">createPDFBuffer</span>(html, css)</code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-block-header">
+          <div class="dots"><span></span><span></span><span></span></div>
+          TypeScript — Markdown
+        </div>
+        <pre><code><span class="kw">import</span> { <span class="type">PDFCreator</span> } <span class="kw">from</span> <span class="str">'lynpdf'</span>
+
+<span class="kw">const</span> creator = <span class="kw">new</span> <span class="fn">PDFCreator</span>()
+
+<span class="cm">// From Markdown string</span>
+<span class="kw">await</span> creator.<span class="fn">createPDFFromMarkdown</span>(
+  <span class="str">'# Hello\n\n```ts\nconst x = 42\n```'</span>,
+  <span class="str">''</span>,
+  <span class="str">'output.pdf'</span>
+)
+
+<span class="cm">// From .md file</span>
+<span class="kw">await</span> creator.<span class="fn">createPDFFromMarkdownFile</span>(
+  <span class="str">'README.md'</span>, <span class="str">''</span>, <span class="str">'readme.pdf'</span>
+)</code></pre>
+      </div>
+    </div>
+
+    <h3 style="margin: 3rem 0 1rem; color: var(--accent);">Framework Integration</h3>
+    <div class="code-section">
+      <div class="code-block">
+        <div class="code-block-header">
+          <div class="dots"><span></span><span></span><span></span></div>
+          Express.js
+        </div>
+        <pre><code><span class="kw">import</span> { <span class="type">PDFCreator</span> } <span class="kw">from</span> <span class="str">'lynpdf'</span>
+<span class="kw">import</span> express <span class="kw">from</span> <span class="str">'express'</span>
+
+<span class="kw">const</span> app = <span class="fn">express</span>()
+<span class="kw">const</span> creator = <span class="kw">new</span> <span class="fn">PDFCreator</span>()
+
+app.<span class="fn">get</span>(<span class="str">'/invoice/:id'</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> html = <span class="fn">renderInvoiceTemplate</span>(req.params.id)
+  <span class="kw">const</span> buffer = <span class="kw">await</span> creator.<span class="fn">createPDFBuffer</span>(html, css)
+  res.<span class="fn">setHeader</span>(<span class="str">'Content-Type'</span>, <span class="str">'application/pdf'</span>)
+  res.<span class="fn">send</span>(buffer)
+})</code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-block-header">
+          <div class="dots"><span></span><span></span><span></span></div>
+          Next.js API Route
+        </div>
+        <pre><code><span class="kw">import</span> { <span class="type">PDFCreator</span> } <span class="kw">from</span> <span class="str">'lynpdf'</span>
+
+<span class="kw">export async function</span> <span class="fn">GET</span>(request: Request) {
+  <span class="kw">const</span> creator = <span class="kw">new</span> <span class="fn">PDFCreator</span>()
+  <span class="kw">const</span> buffer = <span class="kw">await</span> creator.<span class="fn">createPDFBuffer</span>(
+    <span class="str">'&lt;h1&gt;Report&lt;/h1&gt;'</span>,
+    <span class="str">'h1 { color: blue; }'</span>
+  )
+  <span class="kw">return new</span> <span class="fn">Response</span>(buffer, {
+    headers: { <span class="str">'Content-Type'</span>: <span class="str">'application/pdf'</span> }
+  })
+}</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Examples ═══ -->
+  <section id="examples">
+    <h2 class="section-title">Examples</h2>
+    <p class="section-subtitle">Browse example source files in the repository. Clone and run
+      <code>bun run examples</code> to generate PDFs.</p>
+    <div class="examples-grid">
+      <a
+        href="https://github.com/nicenemo/lynpdf/blob/main/examples/demo-single-page.html"
+        target="_blank"
+        class="example-card"
+      >
+        <span class="example-icon">📄</span>
+        <div>
+          <h4>Single Page</h4>
+          <p>Basic single-page PDF generation with styled content.</p>
+        </div>
+      </a>
+      <a
+        href="https://github.com/nicenemo/lynpdf/blob/main/examples/demo-multipage.html"
+        target="_blank"
+        class="example-card"
+      >
+        <span class="example-icon">📑</span>
+        <div>
+          <h4>Multi-Page</h4>
+          <p>Multi-page document with page breaks, headers &amp; footers.</p>
+        </div>
+      </a>
+      <a
+        href="https://github.com/nicenemo/lynpdf/blob/main/examples/demo-invoice.html"
+        target="_blank"
+        class="example-card"
+      >
+        <span class="example-icon">🧾</span>
+        <div>
+          <h4>Invoice</h4>
+          <p>Professional invoice template with tables and layout.</p>
+        </div>
+      </a>
+      <a
+        href="https://github.com/nicenemo/lynpdf/blob/main/examples/demo-certificate.html"
+        target="_blank"
+        class="example-card"
+      >
+        <span class="example-icon">🏆</span>
+        <div>
+          <h4>Certificate</h4>
+          <p>Certificate design with decorative borders and custom fonts.</p>
+        </div>
+      </a>
+      <a
+        href="https://github.com/nicenemo/lynpdf/blob/main/examples/demo-tables.html"
+        target="_blank"
+        class="example-card"
+      >
+        <span class="example-icon">📊</span>
+        <div>
+          <h4>Tables</h4>
+          <p>Complex tables with thead repeat, rowspan, colspan.</p>
+        </div>
+      </a>
+      <a
+        href="https://github.com/nicenemo/lynpdf/blob/main/examples/demo-typography.html"
+        target="_blank"
+        class="example-card"
+      >
+        <span class="example-icon">🔤</span>
+        <div>
+          <h4>Typography</h4>
+          <p>Font rendering, kerning, ligatures, and text shaping.</p>
+        </div>
+      </a>
+      <a
+        href="https://github.com/nicenemo/lynpdf/blob/main/examples/demo-thai-fonts.html"
+        target="_blank"
+        class="example-card"
+      >
+        <span class="example-icon">🇹🇭</span>
+        <div>
+          <h4>Thai Fonts</h4>
+          <p>Showcase of 20+ Thai font families with stacked vowels.</p>
+        </div>
+      </a>
+      <a
+        href="https://github.com/nicenemo/lynpdf/blob/main/examples/demo-font-showcase.html"
+        target="_blank"
+        class="example-card"
+      >
+        <span class="example-icon">🔠</span>
+        <div>
+          <h4>Font Showcase</h4>
+          <p>All available fonts with weights and styles displayed.</p>
+        </div>
+      </a>
+      <a
+        href="https://github.com/nicenemo/lynpdf/blob/main/examples/demo-images.html"
+        target="_blank"
+        class="example-card"
+      >
+        <span class="example-icon">🖼️</span>
+        <div>
+          <h4>SVG &amp; Images</h4>
+          <p>Inline SVG rendering, raster images, and backgrounds.</p>
+        </div>
+      </a>
+      <a
+        href="https://github.com/nicenemo/lynpdf/blob/main/examples/book-lynpdf-guide.html"
+        target="_blank"
+        class="example-card"
+      >
+        <span class="example-icon">📖</span>
+        <div>
+          <h4>Book Guide</h4>
+          <p>Full book-style document with ToC, chapters, and pagination.</p>
+        </div>
+      </a>
+      <a
+        href="https://github.com/nicenemo/lynpdf/blob/main/tests/fixtures/test-18-markdown.md"
+        target="_blank"
+        class="example-card"
+      >
+        <span class="example-icon">📝</span>
+        <div>
+          <h4>Markdown</h4>
+          <p>Markdown → PDF with syntax highlighting and containers.</p>
+        </div>
+      </a>
+      <a
+        href="https://github.com/nicenemo/lynpdf/blob/main/tests/fixtures/test-19-enhanced-markdown.md"
+        target="_blank"
+        class="example-card"
+      >
+        <span class="example-icon">✨</span>
+        <div>
+          <h4>Enhanced Markdown</h4>
+          <p>GitHub Alerts, color boxes, cards, and details blocks.</p>
+        </div>
+      </a>
+    </div>
+  </section>
+
+  <!-- ═══ API Reference ═══ -->
+  <section id="api">
+    <h2 class="section-title">API Reference</h2>
+    <p class="section-subtitle">Full TypeScript API for programmatic PDF generation.</p>
+
+    <h3 style="color: var(--accent); margin-bottom: 0.5rem;">PDFCreator</h3>
+    <div
+      class="code-block"
+      style="max-width: 500px; margin-bottom: 2rem;"
+    >
+      <pre><code><span class="kw">const</span> creator = <span class="kw">new</span> <span class="fn">PDFCreator</span>(options?: <span class="type">PDFOptions</span>)</code></pre>
+    </div>
+
+    <h4 style="margin-bottom: 0.5rem;">PDFOptions</h4>
+    <div style="overflow-x: auto;">
+      <table class="prop-table">
+        <thead>
+          <tr>
+            <th>Option</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>pageSize</td>
+            <td>string | [number, number]</td>
+            <td>'A4'</td>
+            <td>Paper size: 'A4', 'A3', 'letter', [w, h] in points; overridden by @page { size }</td>
+          </tr>
+          <tr>
+            <td>margin</td>
+            <td>number | [t, r, b, l]</td>
+            <td>50</td>
+            <td>Page margins in points (@page overrides)</td>
+          </tr>
+          <tr>
+            <td>css</td>
+            <td>string</td>
+            <td>undefined</td>
+            <td>Additional CSS injected after HTML styles</td>
+          </tr>
+          <tr>
+            <td>defaultFont</td>
+            <td>string</td>
+            <td>'Sarabun'</td>
+            <td>Default font family name</td>
+          </tr>
+          <tr>
+            <td>colorEmoji</td>
+            <td>boolean</td>
+            <td>true</td>
+            <td>Use full-color Twemoji PNGs</td>
+          </tr>
+          <tr>
+            <td>compress</td>
+            <td>boolean</td>
+            <td>true</td>
+            <td>Enable PDF compression</td>
+          </tr>
+          <tr>
+            <td>verbose</td>
+            <td>boolean</td>
+            <td>false</td>
+            <td>Print detailed progress logs</td>
+          </tr>
+          <tr>
+            <td>pdfVersion</td>
+            <td>string</td>
+            <td>'1.7'</td>
+            <td>PDF version: '1.3'–'1.7ext3'</td>
+          </tr>
+          <tr>
+            <td>metadata</td>
+            <td>object</td>
+            <td>—</td>
+            <td>{ Title, Author, Subject, Keywords, Creator, Producer }</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4 style="margin-top: 2rem; margin-bottom: 0.5rem;">Methods</h4>
+    <div style="overflow-x: auto;">
+      <table class="prop-table">
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Returns</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>createPDF(html, css, outputPath)</td>
+            <td>Promise&lt;PDFResult&gt;</td>
+            <td>Generate PDF file</td>
+          </tr>
+          <tr>
+            <td>createPDFFromFile(htmlPath, cssPath, outputPath)</td>
+            <td>Promise&lt;PDFResult&gt;</td>
+            <td>Generate from files</td>
+          </tr>
+          <tr>
+            <td>createPDFBuffer(html, css)</td>
+            <td>Promise&lt;Buffer&gt;</td>
+            <td>Generate as Buffer</td>
+          </tr>
+          <tr>
+            <td>createPDFFromMarkdown(md, css, outputPath)</td>
+            <td>Promise&lt;PDFResult&gt;</td>
+            <td>Generate PDF from Markdown string</td>
+          </tr>
+          <tr>
+            <td>createPDFFromMarkdownFile(mdPath, cssPath, outputPath)</td>
+            <td>Promise&lt;PDFResult&gt;</td>
+            <td>Generate PDF from .md file</td>
+          </tr>
+          <tr>
+            <td>createPDFBufferFromMarkdown(md, css)</td>
+            <td>Promise&lt;Buffer&gt;</td>
+            <td>Generate Buffer from Markdown</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <h4 style="margin-top: 2rem; margin-bottom: 0.5rem;">MarkdownOptions</h4>
+    <div style="overflow-x: auto;">
+      <table class="prop-table">
+        <thead>
+          <tr>
+            <th>Option</th>
+            <th>Type</th>
+            <th>Default</th>
+            <th>Description</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>includeDefaultCss</td>
+            <td>boolean</td>
+            <td>true</td>
+            <td>Include built-in GitHub-style Markdown CSS</td>
+          </tr>
+          <tr>
+            <td>wrapInDocument</td>
+            <td>boolean</td>
+            <td>true</td>
+            <td>Wrap output in a full HTML document</td>
+          </tr>
+          <tr>
+            <td>title</td>
+            <td>string</td>
+            <td>'Untitled'</td>
+            <td>Document title</td>
+          </tr>
+          <tr>
+            <td>renderMermaid</td>
+            <td>boolean</td>
+            <td>true</td>
+            <td>Render Mermaid diagrams via mmdc CLI</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══ CLI Reference ═══ -->
+  <section id="cli">
+    <h2 class="section-title">CLI Reference</h2>
+    <p class="section-subtitle">Full command-line interface options.</p>
+
+    <div
+      class="code-block"
+      style="max-width: 600px; margin-bottom: 2rem;"
+    >
+      <div class="code-block-header">
+        <div class="dots"><span></span><span></span><span></span></div>
+        Usage
+      </div>
+      <pre><code>lynpdf &lt;input.html&gt; [options]
+lynpdf &lt;input.md&gt; [options]
+lynpdf -i input.html -c styles.css -o output.pdf
+cat README.md | lynpdf --stdin --markdown -o out.pdf</code></pre>
+    </div>
+
+    <div class="cli-grid">
+      <div class="cli-item">
+        <code>-i, --input &lt;file&gt;</code>
+        <p>Input HTML or Markdown file</p>
+      </div>
+      <div class="cli-item">
+        <code>-o, --output &lt;file&gt;</code>
+        <p>Output PDF file (default: &lt;input&gt;.pdf)</p>
+      </div>
+      <div class="cli-item">
+        <code>-c, --css &lt;file&gt;</code>
+        <p>External CSS file</p>
+      </div>
+      <div class="cli-item">
+        <code>--extra-css &lt;string&gt;</code>
+        <p>Additional inline CSS string</p>
+      </div>
+      <div class="cli-item">
+        <code>-s, --page-size &lt;size&gt;</code>
+        <p>Page size: A4, A3, letter, legal (default: A4)</p>
+      </div>
+      <div class="cli-item">
+        <code>-m, --margin &lt;pts&gt;</code>
+        <p>Page margin in points (default: 50)</p>
+      </div>
+      <div class="cli-item">
+        <code>--markdown, --md</code>
+        <p>Force Markdown input (auto-detected for .md files)</p>
+      </div>
+      <div class="cli-item">
+        <code>--no-md-css</code>
+        <p>Disable default Markdown stylesheet</p>
+      </div>
+      <div class="cli-item">
+        <code>--color-emoji / --no-color-emoji</code>
+        <p>Toggle color Twemoji PNGs (default: on)</p>
+      </div>
+      <div class="cli-item">
+        <code>--stdin</code>
+        <p>Read input from stdin</p>
+      </div>
+      <div class="cli-item">
+        <code>--verbose</code>
+        <p>Print detailed progress</p>
+      </div>
+      <div class="cli-item">
+        <code>-v, --version</code>
+        <p>Show version</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ CSS Properties ═══ -->
+  <section id="css-props">
+    <h2 class="section-title">Supported CSS Properties</h2>
+    <p class="section-subtitle">CSS properties and values supported in the PDF rendering pipeline.</p>
+    <div style="overflow-x: auto;">
+      <table class="prop-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Properties</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Layout</td>
+            <td>display: flex/block/inline, flex-direction, flex-wrap, justify-content, align-items, flex, flex-grow,
+              flex-shrink, flex-basis, gap</td>
+          </tr>
+          <tr>
+            <td>Box Model</td>
+            <td>width, height, min/max-width/height, padding, margin, border, border-radius, border-collapse, overflow
+            </td>
+          </tr>
+          <tr>
+            <td>Typography</td>
+            <td>font-family, font-size, font-weight, font-style, line-height, text-align (incl. justify), color,
+              letter-spacing, word-spacing, text-decoration</td>
+          </tr>
+          <tr>
+            <td>Visual</td>
+            <td>background-color (hex/rgb/rgba/named), opacity, border-radius, border (shorthand + sides)</td>
+          </tr>
+          <tr>
+            <td>Page Media</td>
+            <td>@page (margin, size — named A0–A6/letter/legal/ledger/tabloid, landscape/portrait),
+              page-break-before/after/inside, counter(page), counter(pages), orphans, widows</td>
+          </tr>
+          <tr>
+            <td>LynPDF Custom</td>
+            <td>-lynpdf-repeat: none — disable thead repeat on a table or thead element</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══ Included Fonts ═══ -->
+  <section id="fonts">
+    <h2 class="section-title">Included Fonts</h2>
+    <p class="section-subtitle">20+ bundled font families — Thai, Latin, Pali/Sanskrit, and specialty fonts.</p>
+
+    <h3 style="color: var(--success); margin-bottom: 1rem;">Google Fonts (Thai + Latin)</h3>
+    <div
+      class="fonts-grid"
+      style="margin-bottom: 2rem;"
+    >
+      <div class="font-card">
+        <h4>Sarabun</h4>
+        <p class="font-meta">Regular, Bold, Italic, Bold Italic</p>
+        <span class="font-badge badge-google">Google Fonts</span>
+        <span class="font-badge badge-otf">Default</span>
+      </div>
+      <div class="font-card">
+        <h4>Prompt</h4>
+        <p class="font-meta">Regular, Bold, Italic, Bold Italic</p>
+        <span class="font-badge badge-google">Google Fonts</span>
+      </div>
+      <div class="font-card">
+        <h4>Kanit</h4>
+        <p class="font-meta">Regular, Bold, Italic, Bold Italic</p>
+        <span class="font-badge badge-google">Google Fonts</span>
+      </div>
+      <div class="font-card">
+        <h4>Mitr</h4>
+        <p class="font-meta">Regular, Bold</p>
+        <span class="font-badge badge-google">Google Fonts</span>
+      </div>
+      <div class="font-card">
+        <h4>Chakra Petch</h4>
+        <p class="font-meta">Regular, Bold, Italic, Bold Italic</p>
+        <span class="font-badge badge-google">Google Fonts</span>
+      </div>
+    </div>
+
+    <h3 style="color: var(--primary-light); margin-bottom: 1rem;">TLWG Fonts (Thai + Pali/Sanskrit)</h3>
+    <div
+      class="fonts-grid"
+      style="margin-bottom: 2rem;"
+    >
+      <div class="font-card">
+        <h4>Garuda</h4>
+        <p class="font-meta">Sans-serif · Regular, Bold, Oblique, BoldOblique</p>
+        <span class="font-badge badge-tlwg">TLWG</span>
+      </div>
+      <div class="font-card">
+        <h4>Loma</h4>
+        <p class="font-meta">Sans-serif · Regular, Bold, Oblique, BoldOblique</p>
+        <span class="font-badge badge-tlwg">TLWG</span>
+      </div>
+      <div class="font-card">
+        <h4>Norasi</h4>
+        <p class="font-meta">Serif · Regular, Bold, Italic, BoldItalic</p>
+        <span class="font-badge badge-tlwg">TLWG</span>
+      </div>
+      <div class="font-card">
+        <h4>Kinnari</h4>
+        <p class="font-meta">Serif · Regular, Bold, Italic, BoldItalic</p>
+        <span class="font-badge badge-tlwg">TLWG</span>
+      </div>
+      <div class="font-card">
+        <h4>Laksaman</h4>
+        <p class="font-meta">Serif · Regular, Bold, Italic, BoldItalic</p>
+        <span class="font-badge badge-tlwg">TLWG</span>
+      </div>
+      <div class="font-card">
+        <h4>Sawasdee</h4>
+        <p class="font-meta">Sans-serif · Regular, Bold, Oblique</p>
+        <span class="font-badge badge-tlwg">TLWG</span>
+      </div>
+      <div class="font-card">
+        <h4>Purisa</h4>
+        <p class="font-meta">Handwriting · Regular, Bold, Oblique</p>
+        <span class="font-badge badge-tlwg">TLWG</span>
+      </div>
+      <div class="font-card">
+        <h4>TlwgMono</h4>
+        <p class="font-meta">Monospace · Regular, Bold</p>
+        <span class="font-badge badge-tlwg">TLWG</span>
+      </div>
+    </div>
+
+    <h3 style="color: var(--accent); margin-bottom: 1rem;">Specialty Fonts</h3>
+    <div class="fonts-grid">
+      <div class="font-card">
+        <h4>IBM Plex Sans</h4>
+        <p class="font-meta">Full OpenType kerning + ligatures</p>
+        <span class="font-badge badge-otf">OTF</span>
+      </div>
+      <div class="font-card">
+        <h4>Inter Variable</h4>
+        <p class="font-meta">Single file, weight 100–900</p>
+        <span class="font-badge badge-otf">Variable TTF</span>
+      </div>
+      <div class="font-card">
+        <h4>NotoEmoji</h4>
+        <p class="font-meta">Monochrome emoji fallback</p>
+        <span class="font-badge badge-otf">Variable</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Architecture ═══ -->
+  <section id="architecture">
+    <h2 class="section-title">Architecture</h2>
+    <p class="section-subtitle">How LynPDF transforms HTML/CSS and Markdown into professional PDFs.</p>
+    <div class="arch-diagram">
+      <span class="highlight">HTML</span> → parse5 → DOM tree
+      <span class="highlight">CSS</span> → css-tree → Stylesheet AST
+      ↓
+      <span class="accent">StyleResolver</span> (CSS selector cascade)
+      ↓
+      <span class="accent">LayoutEngine</span> (Yoga Flexbox — WASM)
+      ↓
+      Post-Layout Passes:
+      • <span class="highlight">applyPageFlow</span> (page-breaks, footer-zone, thead integrity)
+      • <span class="highlight">applyOrphansWidows</span>
+      • <span class="highlight">applyTheadRepeatShift</span> (-lynpdf-repeat)
+      • <span class="highlight">anchorPageBreaks</span>
+      ↓
+      <span class="accent">PDFRenderer</span> (PDFKit + HarfBuzz + Twemoji)
+      ↓
+      <span class="highlight">PDF file</span>
+    </div>
+
+    <h3 style="margin-top: 2.5rem; margin-bottom: 1rem; color: var(--accent);">Key Technologies</h3>
+    <div class="features-grid">
+      <div class="feature-card">
+        <h3>Yoga Layout</h3>
+        <p>Meta's cross-platform Flexbox engine (C++ → WASM). No native compile step needed.</p>
+      </div>
+      <div class="feature-card">
+        <h3>PDFKit</h3>
+        <p>PDF generation library for Node.js — pure JavaScript.</p>
+      </div>
+      <div class="feature-card">
+        <h3>HarfBuzz (WASM)</h3>
+        <p>OpenType shaping: Thai floating vowels, ligatures (fi/fl), kerning — no system libharfbuzz needed.</p>
+      </div>
+      <div class="feature-card">
+        <h3>fontkit</h3>
+        <p>TTF/OTF/Variable font parser with glyph metrics — pure JavaScript.</p>
+      </div>
+      <div class="feature-card">
+        <h3>parse5</h3>
+        <p>Spec-compliant HTML5 parser — pure JavaScript.</p>
+      </div>
+      <div class="feature-card">
+        <h3>Twemoji</h3>
+        <p>Twitter's open-source color emoji — PNGs fetched from CDN and cached locally.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Requirements ═══ -->
+  <section id="requirements">
+    <h2 class="section-title">Requirements</h2>
+    <p class="section-subtitle">Minimal system dependencies — all heavy lifting is done via WebAssembly.</p>
+    <div style="overflow-x: auto;">
+      <table class="prop-table">
+        <thead>
+          <tr>
+            <th>Requirement</th>
+            <th>Version</th>
+            <th>Notes</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>Bun</td>
+            <td>≥ 1.0</td>
+            <td>Recommended runtime — fast, native ESM, built-in TypeScript</td>
+          </tr>
+          <tr>
+            <td>Node.js</td>
+            <td>≥ 18</td>
+            <td>Alternative runtime; required for Intl.Segmenter (th-TH)</td>
+          </tr>
+          <tr>
+            <td>TypeScript</td>
+            <td>≥ 5.0</td>
+            <td>Peer dependency; needed only for type declarations</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div
+      style="margin-top: 1.5rem; padding: 1rem 1.5rem; background: var(--bg-card); border: 1px solid var(--border); border-radius: 10px; font-size: 0.9rem; color: var(--text-muted);"
+    >
+      <strong style="color: var(--accent);">WebAssembly note:</strong> <code>harfbuzzjs</code> (OpenType shaping) and
+      <code>yoga-layout</code> (Flexbox engine) ship as self-contained WASM binaries. No system-level
+      <code>libharfbuzz</code> or <code>libyoga</code> needed. Bun ≥ 1.0 and Node.js ≥ 18 already include WASM support.
+    </div>
+  </section>
+
+  <!-- ═══ Markdown Features ═══ -->
+  <section id="markdown">
+    <h2 class="section-title">Markdown Features</h2>
+    <p class="section-subtitle">Enhanced Markdown → PDF with syntax highlighting, containers, and more.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <span class="feature-icon">🎨</span>
+        <h3>Syntax Highlighting</h3>
+        <p>Code blocks highlighted via highlight.js — 190+ languages, GitHub Light theme.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📦</span>
+        <h3>Alert Containers</h3>
+        <p><code>:::info</code>, <code>:::warning</code>, <code>:::tip</code>, <code>:::note</code>,
+          <code>:::danger</code>, <code>:::caution</code> — with icon + colored styling.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🔔</span>
+        <h3>GitHub Alerts</h3>
+        <p><code>&gt; [!NOTE]</code>, <code>&gt; [!TIP]</code>, <code>&gt; [!WARNING]</code>,
+          <code>&gt; [!CAUTION]</code>, <code>&gt; [!IMPORTANT]</code></p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🃏</span>
+        <h3>Card Container</h3>
+        <p><code>:::card My Title</code> — bordered card with optional title and Markdown content inside.</p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🌈</span>
+        <h3>Color Boxes</h3>
+        <p>Seven colored variants: <code>:::box-blue</code>, <code>:::box-green</code>, <code>:::box-red</code>,
+          <code>:::box-yellow</code>, <code>:::box-purple</code>, <code>:::box-gray</code>, <code>:::box-orange</code>
+        </p>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📊</span>
+        <h3>Mermaid Diagrams</h3>
+        <p>Rendered to SVG when <code>mmdc</code> is on PATH. Falls back to styled code block.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ Footer ═══ -->
+  <footer>
+    <p style="margin-bottom: 0.5rem;">
+      <strong style="color: var(--text);">LynPDF Creator</strong> v2.1.0 · MIT License
+    </p>
+    <p>
+      <a href="https://github.com/nicenemo/lynpdf">GitHub</a> ·
+      <a href="https://www.npmjs.com/package/lynpdf">npm</a> ·
+      <a href="https://github.com/nicenemo/lynpdf/issues">Issues</a> ·
+      <a href="https://github.com/nicenemo/lynpdf/blob/main/LICENSE">License</a>
+    </p>
+    <p style="margin-top: 1rem;">Made with 💛 by the LynPDF team. Meow! 🐱</p>
+  </footer>
+
+  <script>
+    // Auto-detect GitHub repo URL from the Pages hostname
+    // e.g. https://user.github.io/lynpdf → https://github.com/user/lynpdf
+    (function () {
+      const host = location.hostname
+      const path = location.pathname.split('/')[1] || ''
+      let repoUrl = 'https://github.com/nicenemo/lynpdf' // fallback
+      if (host.endsWith('.github.io')) {
+        const owner = host.replace('.github.io', '')
+        const repo = path || 'lynpdf'
+        repoUrl = 'https://github.com/' + owner + '/' + repo
+      }
+      document.querySelectorAll('a[href*="nicenemo/lynpdf"]').forEach(a => {
+        a.href = a.href.replace('https://github.com/nicenemo/lynpdf', repoUrl)
+      })
+    })()
+
+    // Smooth highlight on nav links
+    document.querySelectorAll('nav a[href^="#"]').forEach(a => {
+      a.addEventListener('click', e => {
+        e.preventDefault()
+        const target = document.querySelector(a.getAttribute('href'))
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    })
+
+    // Copy install command
+    document.querySelector('.install-box').addEventListener('click', function () {
+      navigator.clipboard.writeText('bun add lynpdf').then(() => {
+        const hint = this.querySelector('.copy-hint')
+        hint.textContent = 'copied!'
+        setTimeout(() => { hint.textContent = 'click to copy' }, 2000)
+      })
+    });
+  </script>
+</body>
+
+</html>
