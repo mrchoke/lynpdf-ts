@@ -82,7 +82,21 @@ export function applyPageFlow (root: LayoutNode, pageMargin: number = PAGE_MARGI
         const localY = child.y - pageIdx * PAGE_H
         // Push to the next page unless already at (or near) the
         // content start of the current page.
-        if (localY > pageMargin + 2) {
+        //
+        // Exception: if the immediately preceding sibling has actual content
+        // on the same page, this element may have landed at localY ≈ pageMargin
+        // by coincidence (accumulated extraShift from the sibling's overflow),
+        // NOT because it genuinely starts a fresh page.  In that case we must
+        // still push to honour page-break-before: always.
+        let needsPush = localY > pageMargin + 2
+        if (!needsPush && i > 0) {
+          const prev = node.children[i - 1]!
+          const prevActualBottom = actualBottom(prev)
+          if (Math.floor(prevActualBottom / PAGE_H) === pageIdx) {
+            needsPush = true
+          }
+        }
+        if (needsPush) {
           const delta = pushToNextPage(child, pageMargin, pageH)
           extraShift += delta
         }
@@ -257,6 +271,14 @@ export function applyMarginZoneCleanup (root: LayoutNode, pageMargin: number = P
     for (let i = 0; i < node.children.length; i++) {
       const child = node.children[i]!
 
+      // Reset extraShift cascade at forced page-break boundaries.
+      // Elements with page-break-before: always start a fresh page context;
+      // margin-zone corrections from the preceding page must not shift them.
+      const childBreakBefore = child.styles['page-break-before'] || child.styles['break-before']
+      if ((childBreakBefore === 'always' || childBreakBefore === 'page') && extraShift > 0) {
+        extraShift = 0
+      }
+
       if (extraShift > 0) {
         shiftSubtree(child, extraShift)
       }
@@ -339,6 +361,26 @@ export function compactTableRowGaps (root: LayoutNode, pageMargin: number = PAGE
       node.tagName === 'tfoot'
     ) {
       let compaction = 0
+
+      // ── Gap between section start and first row ──────────────
+      // applyPageFlow may push the first row of a section into the next
+      // page (footer-zone avoidance) while the section container stays
+      // on the previous page.  Later passes shift the entire table so
+      // both end up on the same page, but the internal gap remains.
+      // Compact it here so the rows sit flush against the section start.
+      {
+        const firstRow = node.children.find(c => c.tagName === 'tr')
+        if (firstRow) {
+          const sectionPage = Math.floor(node.y / PAGE_H)
+          const rowPage = Math.floor(firstRow.y / PAGE_H)
+          if (sectionPage === rowPage) {
+            const gap = firstRow.y - node.y
+            if (gap > 1) {
+              compaction -= gap
+            }
+          }
+        }
+      }
 
       for (let r = 0; r < node.children.length; r++) {
         const row = node.children[r]!
@@ -490,6 +532,14 @@ export function compactSiblingGaps (root: LayoutNode, pageMargin: number = PAGE_
     // Don't touch table internals — handled by compactTableRowGaps
     if (TABLE_TAGS.has(tag)) return
 
+    // Skip row containers — children are laid out horizontally, not
+    // vertically.  Treating them as vertical siblings would incorrectly
+    // detect "overlap" and push inline children to the next line.
+    if (node.styles['flex-direction'] === 'row') {
+      for (const child of node.children) process(child)
+      return
+    }
+
     let compaction = 0
 
     for (let i = 0; i < node.children.length; i++) {
@@ -525,6 +575,10 @@ export function compactSiblingGaps (root: LayoutNode, pageMargin: number = PAGE_
             compaction += fix // reduce compaction magnitude
           }
         }
+      } else if (compaction > 0.5) {
+        // Positive compaction = push-down to resolve overlap with the
+        // previous sibling's actual bottom (set by overlap repair below).
+        shiftSubtree(child, compaction)
       }
 
       // Look ahead: gap to next sibling on same page?
@@ -540,6 +594,21 @@ export function compactSiblingGaps (root: LayoutNode, pageMargin: number = PAGE_
 
         if (bottomPage === nextPage) {
           const gap = nextY - childActBottom
+
+          // ── Overlap repair ──────────────────────────────────
+          // fixTableRowPositions may push rows within a table after
+          // a previous compaction pass already positioned the next
+          // sibling.  This widens the table's actualBottom and
+          // creates overlap (gap < 0).  Push the next sibling down
+          // so it sits right after the actual bottom + expected margin.
+          if (gap < -0.5) {
+            const prevMB = parseFloat(child.styles['margin-bottom'] || '0') || 0
+            const nextMT = parseFloat(next.styles['margin-top'] || '0') || 0
+            const expectedGap = prevMB + nextMT
+            const pushDown = -gap + Math.max(expectedGap, 4)
+            compaction += pushDown
+            continue
+          }
 
           // Expected gap from CSS margins
           const prevMB = parseFloat(child.styles['margin-bottom'] || '0') || 0
@@ -885,9 +954,25 @@ export function anchorPageBreaks (root: LayoutNode, pageMargin: number = PAGE_MA
     for (let i = 0; i < node.children.length; i++) {
       const child = node.children[i]!
 
-      // Apply pending compaction
+      // Apply pending compaction — but NEVER pull an element across a page
+      // boundary backward (from page N to page N-1).
       if (compaction < 0) {
-        shiftSubtree(child, compaction)
+        const origPage = Math.floor(child.y / PAGE_H)
+        const newY = child.y + compaction
+        const newPage = Math.floor(newY / PAGE_H)
+        if (newPage < origPage) {
+          // Compaction would cross a page boundary — limit to page content-start
+          const pageTop = origPage * PAGE_H + pageMargin
+          const limitedShift = pageTop - child.y
+          if (limitedShift < -0.5) {
+            shiftSubtree(child, limitedShift)
+            compaction = limitedShift
+          } else {
+            compaction = 0
+          }
+        } else {
+          shiftSubtree(child, compaction)
+        }
       }
 
       const breakBefore =

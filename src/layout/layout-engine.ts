@@ -920,6 +920,11 @@ export class LayoutEngine {
     // creating new same-page gaps.
     compactSiblingGaps(rootLayout, pageMargin, pageHeight)
 
+    // fixTableRowPositions may push rows across page boundaries, creating
+    // cross-page gaps.  After compactSiblingGaps shifts the whole table,
+    // those gaps become same-page gaps.  Compact them now.
+    compactTableRowGaps(rootLayout, pageMargin, pageHeight)
+
     // Final anchor pass: ensure page-break-before: always elements sit
     // at exactly pageMargin on their current page, fixing any residual
     // drift from thead-repeat or other cascading shifts.
