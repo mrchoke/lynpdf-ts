@@ -376,6 +376,8 @@
     <p style="margin-bottom: 5px;"><a href="#ch9-advanced"><strong>บทที่ 9</strong> — ตั้งค่าขั้นสูง (Page Size,
         Orientation, Margins, Metadata, PDFOptions)</a></p>
     <p style="margin-bottom: 5px;"><a href="#ch10-graphics"><strong>บทที่ 10</strong> — กราฟิกและสี</a></p>
+    <p style="margin-bottom: 5px;"><a href="#ch11-markdown"><strong>บทที่ 11</strong> — Markdown → PDF (Syntax
+        Highlighting, Containers, Alerts)</a></p>
     <p style="margin-bottom: 5px;"><a href="#appendix"><strong>ภาคผนวก</strong> — ข้อมูลอ้างอิง</a></p>
   </div>
 
@@ -619,7 +621,8 @@
 
   <p>ขนาดกระดาษ A4 = 595.28 × 841.89 points (ค่าเริ่มต้น), ระยะขอบ = 50 points ทุกด้าน (กำหนดเองได้ผ่าน @page). การใช้
     <code>@page { size: A4 landscape; }</code> หรือ <code>@page { size: 297mm 210mm; }</code> จะเปลี่ยนขนาดกระดาษใน PDF
-    โดยอัตโนมัติ — รองรับ A0–A6, B4, B5, letter, legal, ledger, tabloid</p>
+    โดยอัตโนมัติ — รองรับ A0–A6, B4, B5, letter, legal, ledger, tabloid
+  </p>
 
   <!-- ═══════════════════════════════════════════════════════════════
      CHAPTER 4: CSS & Layout
@@ -1066,18 +1069,25 @@
   <div class="sample-box">
     <p style="font-size: 11px; color: #888; margin-bottom: 4px;">text-align: justify</p>
     <p style="text-align: justify;">
-      ประเทศไทยเป็นประเทศที่มีความหลากหลายทางวัฒนธรรมและธรรมชาติ ตั้งแต่ภูเขาสูงทางภาคเหนือ
-      ไปจนถึงชายหาดที่สวยงามทางภาคใต้ อาหารไทยเป็นที่รู้จักไปทั่วโลกด้วยรสชาติที่เป็นเอกลักษณ์ ผสมผสานระหว่างรสเปรี้ยว
-      หวาน เค็ม และเผ็ด วัฒนธรรมไทยมีความลึกซึ้งและงดงาม
+      การจัดรูปแบบข้อความแบบกระจายเต็มบรรทัด (Justify)
+      ในภาษาไทยนั้นมีความท้าทายอย่างมากเนื่องจากภาษาไทยไม่มีการเว้นวรรคระหว่างคำเหมือนภาษาอังกฤษหากใช้การกระจายช่องว่างระหว่างคำเพียงอย่างเดียว
+      จะทำให้เกิดช่องว่างขนาดใหญ่ที่ดูไม่สวยงามและอ่านยากดังนั้นระบบจึงต้องใช้เทคนิคการกระจายช่องว่างระดับคลัสเตอร์(Cluster-based
+      Justification) โดยอาศัย HarfBuzz ในการแยกแยะพยัญชนะ
+      สระและวรรณยุกต์ให้อยู่เป็นกลุ่มเดียวกันแล้วจึงกระจายช่องว่างเล็กๆ
+      แทรกเข้าไปอย่างแนบเนียนพร้อมทั้งให้น้ำหนักกับรอยต่อระหว่างคำมากกว่ารอยต่อระหว่างคลัสเตอร์เพื่อรักษารูปแบบการอ่านที่เป็นธรรมชาติ
     </p>
   </div>
 
   <div class="sample-box">
     <p style="font-size: 11px; color: #888; margin-bottom: 4px;">text-align: left (เปรียบเทียบ)</p>
     <p style="text-align: left;">
-      ประเทศไทยเป็นประเทศที่มีความหลากหลายทางวัฒนธรรมและธรรมชาติ ตั้งแต่ภูเขาสูงทางภาคเหนือ
-      ไปจนถึงชายหาดที่สวยงามทางภาคใต้ อาหารไทยเป็นที่รู้จักไปทั่วโลกด้วยรสชาติที่เป็นเอกลักษณ์ ผสมผสานระหว่างรสเปรี้ยว
-      หวาน เค็ม และเผ็ด วัฒนธรรมไทยมีความลึกซึ้งและงดงาม
+      การจัดรูปแบบข้อความแบบกระจายเต็มบรรทัด (Justify) ในภาษาไทยนั้นมีความท้าทายอย่างมาก
+      เนื่องจากภาษาไทยไม่มีการเว้นวรรคระหว่างคำเหมือนภาษาอังกฤษ หากใช้การกระจายช่องว่างระหว่างคำเพียงอย่างเดียว
+      จะทำให้เกิดช่องว่างขนาดใหญ่ที่ดูไม่สวยงามและอ่านยาก ดังนั้นระบบจึงต้องใช้เทคนิคการกระจายช่องว่างระดับคลัสเตอร์
+      (Cluster-based Justification) โดยอาศัย HarfBuzz ในการแยกแยะพยัญชนะ สระ และวรรณยุกต์ให้อยู่เป็นกลุ่มเดียวกัน
+      แล้วจึงกระจายช่องว่างเล็กๆ แทรกเข้าไปอย่างแนบเนียน
+      พร้อมทั้งให้น้ำหนักกับรอยต่อระหว่างคำมากกว่ารอยต่อระหว่างคลัสเตอร์
+      เพื่อรักษารูปแบบการอ่านที่เป็นธรรมชาติ
     </p>
   </div>
 
@@ -1536,7 +1546,7 @@
     </div>
   </div>
 
-  <h2>10.2 SVG Gradients</h2>
+  <h2 style="page-break-before: always;">10.2 SVG Gradients</h2>
 
   <div style="text-align: center; margin-bottom: 14px;">
     <svg
@@ -1642,6 +1652,397 @@
       <tr class="alt">
         <td>box-shadow</td>
         <td>เงา CSS (จำกัด)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <!-- ═══════════════════════════════════════════════════════════════
+     CHAPTER 11: Markdown → PDF
+     ═══════════════════════════════════════════════════════════════ -->
+
+  <div
+    id="ch11-markdown"
+    class="chapter-title"
+  >บทที่ 11: Markdown → PDF</div>
+
+  <p>LynPDF รองรับการแปลง Markdown เป็น PDF โดยตรง ผ่าน CLI หรือ TypeScript API
+    โดยไม่ต้องเขียน HTML เองแม้แต่บรรทัดเดียว รองรับ GitHub Flavored Markdown (GFM)
+    พร้อมฟีเจอร์เสริมครบครัน: syntax highlighting, custom containers, GitHub-style alerts,
+    color boxes, tables, task lists, footnotes และ Mermaid diagrams</p>
+
+  <h2>11.1 การใช้งานผ่าน CLI</h2>
+
+  <div class="sample-box">
+    <p style="font-size: 11px; color: #888; margin-bottom: 6px;">Terminal</p>
+    <p style="font-family: monospace; font-size: 12px; line-height: 1.8; color: #24292e;">
+      # แปลง .md เป็น PDF (ตรวจจาก extension อัตโนมัติ)<br>
+      lynpdf README.md -o readme.pdf<br>
+      <br>
+      # เพิ่ม CSS เสริม<br>
+      lynpdf doc.md -c custom.css -o doc.pdf<br>
+      <br>
+      # ปิด default stylesheet ของ Markdown<br>
+      lynpdf doc.md --no-md-css -o doc.pdf<br>
+      <br>
+      # อ่านจาก stdin (บังคับ Markdown mode)<br>
+      cat notes.md | lynpdf --stdin --md -o notes.pdf
+    </p>
+  </div>
+
+  <h2>11.2 การใช้งานผ่าน TypeScript API</h2>
+
+  <div class="sample-box">
+    <p style="font-size: 11px; color: #888; margin-bottom: 6px;">TypeScript API</p>
+    <p style="font-family: monospace; font-size: 11px; line-height: 1.8; color: #24292e;">
+      import { PDFCreator, MarkdownParser } from 'lynpdf'<br>
+      <br>
+      const creator = new PDFCreator()<br>
+      <br>
+      // จาก string<br>
+      await creator.createPDFFromMarkdown(<br>
+      &nbsp;&nbsp;'# Hello\n\n```ts\nconst x = 42\n```',<br>
+      &nbsp;&nbsp;'', // optional CSS<br>
+      &nbsp;&nbsp;'output.pdf'<br>
+      )<br>
+      <br>
+      // จาก .md file<br>
+      await creator.createPDFFromMarkdownFile('README.md', '', 'readme.pdf')<br>
+      <br>
+      // เป็น Buffer (สำหรับ API/HTTP)<br>
+      const buf = await creator.createPDFBufferFromMarkdown(md, '')<br>
+      <br>
+      // Low-level: sync HTML (ไม่มี Mermaid)<br>
+      const html = MarkdownParser.toHTML(md, { title: 'My Doc' })<br>
+      <br>
+      // Low-level: async HTML (รองรับ Mermaid → SVG)<br>
+      const html2 = await MarkdownParser.toHTMLAsync(md, { renderMermaid: true })<br>
+      await creator.createPDF(html2, '', 'output.pdf')
+    </p>
+  </div>
+
+  <h2>11.3 Syntax Highlighting</h2>
+
+  <p>Code block ทุกอันจะถูก highlight โดยอัตโนมัติด้วย <strong>highlight.js</strong> (190+ ภาษา)
+    ใช้ธีม <strong>GitHub Light</strong> — สีจะถูก inline เป็น <code>style="color:..."</code>
+    ภายในแต่ละ token และแสดงใน PDF ได้ถูกต้องสมบูรณ์</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Token</th>
+        <th>สี (GitHub Light)</th>
+        <th>ตัวอย่าง</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>keyword</td>
+        <td style="color: #d73a49;">#d73a49</td>
+        <td><code style="color: #d73a49;">const, function, return, if</code></td>
+      </tr>
+      <tr class="alt">
+        <td>string</td>
+        <td style="color: #032f62;">#032f62</td>
+        <td><code style="color: #032f62;">"hello world"</code></td>
+      </tr>
+      <tr>
+        <td>number</td>
+        <td style="color: #005cc5;">#005cc5</td>
+        <td><code style="color: #005cc5;">42, 3.14, 0xFF</code></td>
+      </tr>
+      <tr class="alt">
+        <td>function / title</td>
+        <td style="color: #6f42c1;">#6f42c1</td>
+        <td><code style="color: #6f42c1;">myFunction()</code></td>
+      </tr>
+      <tr>
+        <td>built-in</td>
+        <td style="color: #e36209;">#e36209</td>
+        <td><code style="color: #e36209;">console, print, len</code></td>
+      </tr>
+      <tr class="alt">
+        <td>comment</td>
+        <td style="color: #6a737d;">#6a737d</td>
+        <td><code style="color: #6a737d;">// comment, # remark</code></td>
+      </tr>
+      <tr>
+        <td>type / class</td>
+        <td style="color: #005cc5;">#005cc5</td>
+        <td><code style="color: #005cc5;">string, boolean, MyClass</code></td>
+      </tr>
+      <tr class="alt">
+        <td>operator</td>
+        <td style="color: #d73a49;">#d73a49</td>
+        <td><code style="color: #d73a49;">=&gt;, ===, +, -&gt;</code></td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="sample-box">
+    <p style="font-size: 11px; color: #888; margin-bottom: 6px;">Markdown source</p>
+    <p style="font-family: monospace; font-size: 12px; line-height: 1.8; color: #24292e;">
+      ```typescript<br>
+      interface Config {<br>
+      &nbsp;&nbsp;pageSize: 'A4' | 'letter'<br>
+      &nbsp;&nbsp;margin: number<br>
+      }<br>
+      <br>
+      async function generate(cfg: Config) {<br>
+      &nbsp;&nbsp;const creator = new PDFCreator()<br>
+      &nbsp;&nbsp;return creator.createPDFBuffer(html, '')<br>
+      }<br>
+      ```
+    </p>
+  </div>
+
+  <p>ภาษาที่รองรับ (ตัวอย่าง): TypeScript, JavaScript, Python, HTML, CSS, JSON, SQL,
+    Bash, Dockerfile, Go, Rust, Java, C/C++, PHP, Ruby, Swift, Kotlin, YAML, XML,
+    Markdown และอีกกว่า 190 ภาษา</p>
+
+  <h2>11.4 Page Break ด้วย <code>---</code></h2>
+
+  <p>ใน Markdown → PDF โมเดลของ LynPDF จะแปลง <code>---</code> (thematic break / <code>&lt;hr&gt;</code>)
+    เป็น <strong>page break</strong> อัตโนมัติ ทำให้จัดหน้าได้สะดวกโดยไม่ต้องเขียน HTML:</p>
+
+  <div class="sample-box">
+    <p style="font-size: 11px; color: #888; margin-bottom: 6px;">Markdown — จัดแต่ละ section คนละหน้า</p>
+    <p style="font-family: monospace; font-size: 12px; line-height: 1.8; color: #24292e;">
+      ## บทที่ 1: บทนำ<br>
+      ข้อความบทที่ 1...<br>
+      <br>
+      ---<br>
+      <br>
+      ## บทที่ 2: เนื้อหา<br>
+      ข้อความบทที่ 2...
+    </p>
+  </div>
+
+  <p>บรรทัด <code>---</code> สร้าง <code>&lt;hr style="page-break-after: always"&gt;</code>
+    โดยอัตโนมัติผ่าน default CSS ของ LynPDF</p>
+
+  <h2>11.5 Custom Containers</h2>
+
+  <p>ใช้ syntax <code>:::type</code> เพื่อสร้าง container พิเศษ (ต้องการ plugin
+    <code>markdown-it-container</code> ซึ่งรวมมาแล้ว):
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Syntax</th>
+        <th>ประเภท</th>
+        <th>สีพื้นหลัง</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>:::info</code></td>
+        <td>ข้อมูลทั่วไป</td>
+        <td>ฟ้าอ่อน</td>
+      </tr>
+      <tr class="alt">
+        <td><code>:::tip ชื่อ</code></td>
+        <td>เคล็ดลับ</td>
+        <td>เขียวอ่อน</td>
+      </tr>
+      <tr>
+        <td><code>:::warning ชื่อ</code></td>
+        <td>คำเตือน</td>
+        <td>เหลืองอ่อน</td>
+      </tr>
+      <tr class="alt">
+        <td><code>:::danger</code></td>
+        <td>อันตราย</td>
+        <td>แดงอ่อน</td>
+      </tr>
+      <tr>
+        <td><code>:::note</code></td>
+        <td>หมายเหตุ</td>
+        <td>เทาอ่อน</td>
+      </tr>
+      <tr class="alt">
+        <td><code>:::caution</code></td>
+        <td>ข้อควรระวัง</td>
+        <td>ส้มอ่อน</td>
+      </tr>
+      <tr>
+        <td><code>:::important</code></td>
+        <td>สำคัญ</td>
+        <td>ม่วงอ่อน</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <div class="sample-box">
+    <p style="font-family: monospace; font-size: 12px; line-height: 1.8; color: #24292e;">
+      :::warning ระวัง!<br>
+      อย่าลืมตั้งค่า @page { margin } เมื่อใช้ custom CSS<br>
+      :::
+    </p>
+  </div>
+
+  <h2>11.6 GitHub-Style Alerts</h2>
+
+  <p>รองรับ <code>&gt; [!NOTE]</code> syntax เหมือน GitHub README:</p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Syntax</th>
+        <th>ประเภท</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>&gt; [!NOTE]</code></td>
+        <td>หมายเหตุ (ฟ้า)</td>
+      </tr>
+      <tr class="alt">
+        <td><code>&gt; [!TIP]</code></td>
+        <td>เคล็ดลับ (เขียว)</td>
+      </tr>
+      <tr>
+        <td><code>&gt; [!WARNING]</code></td>
+        <td>คำเตือน (เหลือง)</td>
+      </tr>
+      <tr class="alt">
+        <td><code>&gt; [!CAUTION]</code></td>
+        <td>ข้อควรระวัง (แดง)</td>
+      </tr>
+      <tr>
+        <td><code>&gt; [!IMPORTANT]</code></td>
+        <td>สำคัญ (ม่วง)</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>11.7 Color Boxes และ Cards</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Syntax</th>
+        <th>สีกรอบ / พื้น</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>:::card ชื่อ</code></td>
+        <td>การ์ดขาว มีเงา</td>
+      </tr>
+      <tr class="alt">
+        <td><code>:::box-blue</code></td>
+        <td>ฟ้า</td>
+      </tr>
+      <tr>
+        <td><code>:::box-green</code></td>
+        <td>เขียว</td>
+      </tr>
+      <tr class="alt">
+        <td><code>:::box-red</code></td>
+        <td>แดง</td>
+      </tr>
+      <tr>
+        <td><code>:::box-yellow</code></td>
+        <td>เหลือง</td>
+      </tr>
+      <tr class="alt">
+        <td><code>:::box-purple</code></td>
+        <td>ม่วง</td>
+      </tr>
+      <tr>
+        <td><code>:::box-gray</code></td>
+        <td>เทา</td>
+      </tr>
+      <tr class="alt">
+        <td><code>:::box-orange</code></td>
+        <td>ส้ม</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>11.8 Markdown Features ที่รองรับ</h2>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Feature</th>
+        <th>หมายเหตุ</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>GFM Tables</td>
+        <td>ตาราง | col | col | พร้อม border</td>
+      </tr>
+      <tr class="alt">
+        <td>Task Lists</td>
+        <td><code>- [x] done</code> / <code>- [ ] todo</code></td>
+      </tr>
+      <tr>
+        <td>Footnotes</td>
+        <td><code>[^1]</code> อ้างอิงท้ายหน้า</td>
+      </tr>
+      <tr class="alt">
+        <td>Strikethrough</td>
+        <td><code>~~ข้อความ~~</code></td>
+      </tr>
+      <tr>
+        <td>--- เป็น Page Break</td>
+        <td>แปลง &lt;hr&gt; เป็น page-break-after: always</td>
+      </tr>
+      <tr class="alt">
+        <td>Mermaid Diagrams</td>
+        <td>ต้องใช้ <code>toHTMLAsync({ renderMermaid: true })</code> + <code>mmdc</code></td>
+      </tr>
+      <tr>
+        <td>Inline HTML</td>
+        <td>HTML ใน Markdown จะถูกประมวลผลปกติ</td>
+      </tr>
+      <tr class="alt">
+        <td>Custom CSS</td>
+        <td><code>--no-md-css</code> ปิด default stylesheet ได้</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <h2>11.9 Default CSS ของ Markdown</h2>
+
+  <p>LynPDF ใส่ default stylesheet ให้อัตโนมัติเมื่อแปลง Markdown (สามารถปิดได้ด้วย
+    <code>--no-md-css</code> หรือ <code>{ includeDefaultCss: false }</code>):
+  </p>
+
+  <table>
+    <thead>
+      <tr>
+        <th>Element</th>
+        <th>Default Style</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>@page</code></td>
+        <td>margin: 2cm</td>
+      </tr>
+      <tr class="alt">
+        <td><code>body</code></td>
+        <td>font: Sarabun 14px, line-height 1.6</td>
+      </tr>
+      <tr>
+        <td><code>pre</code> (code block)</td>
+        <td>พื้น #f6f8fa, border, monospace 12px, padding 16px 18px</td>
+      </tr>
+      <tr class="alt">
+        <td><code>.code-lang-badge</code></td>
+        <td>แถบชื่อภาษา (#eaeef2) แสดงชื่อภาษาเหนือ code block</td>
+      </tr>
+      <tr>
+        <td><code>hr</code></td>
+        <td>page-break-after: always (ไม่แสดงเส้น)</td>
+      </tr>
+      <tr class="alt">
+        <td><code>table</code></td>
+        <td>border-collapse, th พื้น #f6f8fa, แถบสลับสี</td>
       </tr>
     </tbody>
   </table>
@@ -1824,7 +2225,7 @@
     </tbody>
   </table>
 
-  <h2>ง. ลิขสิทธิ์</h2>
+  <h2 style="page-break-before: always;">ง. ลิขสิทธิ์</h2>
 
   <p>LynPDF เผยแพร่ภายใต้ MIT License — ใช้งานในโปรเจกต์ส่วนตัวและเชิงพาณิชย์ได้อิสระ</p>
 

@@ -101,3 +101,4 @@ cache/
 .DS_Store
 
 .bun-cache/
+core
