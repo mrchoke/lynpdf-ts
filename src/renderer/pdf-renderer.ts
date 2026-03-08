@@ -1352,8 +1352,53 @@ export class PDFRenderer {
           // Wrap text rendering in save/restore to isolate fill color/opacity
           doc.save()
 
+          // ── Styled inline segments (bold, italic, code, etc.) ──
+          const hasStyledSegments = !isPreformatted && node.colorSegments && node.colorSegments.length > 0
+
           // ── Preformatted text — render line by line ──────────────
-          if (isPreformatted) {
+          if (hasStyledSegments && !hasEmojiContent) {
+            // Render combined text segment-by-segment using PDFKit continued
+            const segs = node.colorSegments!.filter((s: ColorSegment) => s.text && s.text.length > 0)
+            if (segs.length > 0) {
+              doc.fontSize(fontSize)
+              for (let si = 0; si < segs.length; si++) {
+                const seg = segs[si]!
+                const isLast = si === segs.length - 1
+                const isFirst = si === 0
+
+                // Resolve font for this segment
+                const segStyles: Record<string, string> = { ...node.styles }
+                if (seg.fontWeight) segStyles['font-weight'] = seg.fontWeight
+                if (seg.fontStyle) segStyles['font-style'] = seg.fontStyle
+                if (seg.fontFamily) segStyles['font-family'] = seg.fontFamily
+                const segFontName = PDFRenderer.resolveFontName(segStyles)
+
+                const segColor = seg.color
+                  ? (ColorParser.parse(seg.color) || parsedColor)
+                  : parsedColor
+
+                doc.font(segFontName)
+                  .fontSize(fontSize)
+                  .fillOpacity(segColor.opacity)
+                  .fillColor(segColor.color)
+
+                if (isFirst) {
+                  doc.text(seg.text, node.x, localY, {
+                    width: renderWidth,
+                    align: textAlign,
+                    lineBreak: true,
+                    lineGap,
+                    continued: !isLast,
+                  })
+                } else {
+                  doc.text(seg.text, {
+                    lineGap,
+                    continued: !isLast,
+                  })
+                }
+              }
+            }
+          } else if (isPreformatted) {
             doc.fontSize(fontSize)
               .fillOpacity(parsedColor.opacity)
               .font(fontName)

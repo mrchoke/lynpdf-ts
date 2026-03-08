@@ -8,10 +8,13 @@ import type { FontFaceRule, PageRule } from './style-resolver'
 import { StyleResolver } from './style-resolver'
 import { YogaMapper } from './yoga-mapper'
 
-/** A colored text segment within a preformatted code block. */
+/** A styled text segment for preformatted code or inline text flow. */
 export interface ColorSegment {
   text: string
-  color?: string   // inline CSS color, e.g. '#d73a49'
+  color?: string      // inline CSS color, e.g. '#d73a49'
+  fontWeight?: string  // e.g. 'bold'
+  fontStyle?: string   // e.g. 'italic'
+  fontFamily?: string  // e.g. "'IBM Plex Mono', monospace"
 }
 
 export interface LayoutNode {
@@ -189,6 +192,157 @@ export class LayoutEngine {
       firstRowDone: boolean
       /** Tracks cell index within the current row. */
       cellIndex: number
+    }
+
+    // ── Inline flattening helpers ──────────────────────────────────
+    // Tags whose children can be flattened into a single text node.
+    const FLATTENABLE_INLINE = new Set(['strong', 'b', 'em', 'i', 'code', 'span', 'br', 's', 'del', 'sub', 'sup', 'mark', 'small', 'u', 'label', 'abbr', 'time'])
+    const STYLED_INLINE = new Set(['strong', 'b', 'em', 'i', 'code', 'span', 's', 'del', 'sub', 'sup', 'mark', 'small', 'u'])
+
+    /** Check recursively that a node's children are all inline (flattenable). */
+    const canFlattenInline = (n: any): boolean => {
+      if (!n.childNodes) return true
+      return n.childNodes.every((c: any) => {
+        if (c.nodeName === '#text' || c.nodeName === '#comment') return true
+        if (FLATTENABLE_INLINE.has(c.nodeName)) return canFlattenInline(c)
+        return false
+      })
+    }
+
+    /** Check if a node has at least one styled inline child (not just text). */
+    const hasStyledInlineChild = (n: any): boolean => {
+      if (!n.childNodes) return false
+      return n.childNodes.some((c: any) => STYLED_INLINE.has(c.nodeName))
+    }
+
+    /** Recursively extract styled text segments from inline DOM nodes. */
+    const extractInlineSegments = (
+      n: any,
+      inherited: Record<string, string>,
+      chain: Array<{ tagName: string, classes: string[], id?: string }>
+    ): ColorSegment[] => {
+      if (n.nodeName === '#text') {
+        let text = n.value || ''
+        text = text.replace(/[\n\t\r]+/g, ' ')
+        if (!text) return []
+        return [{
+          text,
+          color: inherited['color'],
+          fontWeight: inherited['font-weight'],
+          fontStyle: inherited['font-style'],
+          fontFamily: inherited['font-family'],
+        }]
+      }
+      if (n.nodeName === '#comment') return []
+      if (n.nodeName === 'br') return [{ text: '\n' }]
+
+      const tn = n.nodeName as string
+      if (!FLATTENABLE_INLINE.has(tn)) return []
+
+      const attrs = n.attrs || []
+      const clsAttr = attrs.find((a: any) => a.name === 'class')
+      const idAt = attrs.find((a: any) => a.name === 'id')
+      const cls = clsAttr ? clsAttr.value.split(' ') : []
+      const nid = idAt ? idAt.value : undefined
+
+      const nStyles = styleResolver.resolve(tn, cls, nid, chain)
+      const childChain = [...chain, { tagName: tn, classes: cls, id: nid }]
+
+      const stAttr = attrs.find((a: any) => a.name === 'style')
+      const inSt: Record<string, string> = {}
+      if (stAttr) {
+        for (const part of stAttr.value.split(';')) {
+          const [k, v] = part.split(':')
+          if (k && v) inSt[k.trim()] = v.trim()
+        }
+      }
+
+      const inh: Record<string, string> = {}
+      for (const k of ['font-family', 'font-size', 'font-weight', 'font-style', 'color']) {
+        if (inherited[k]) inh[k] = inherited[k]
+      }
+      const cur = { ...inh, ...nStyles, ...inSt }
+
+      if (tn === 'strong' || tn === 'b') cur['font-weight'] = cur['font-weight'] || 'bold'
+      if (tn === 'em' || tn === 'i') cur['font-style'] = cur['font-style'] || 'italic'
+
+      const segs: ColorSegment[] = []
+      if (n.childNodes) {
+        for (const c of n.childNodes) segs.push(...extractInlineSegments(c, cur, childChain))
+      }
+      return segs
+    }
+
+    /**
+     * Build a single flattened text node (with styled colorSegments) for an
+     * inline-only container and attach it to the given parent custom node.
+     * Returns true if flattening was performed.
+     */
+    const flattenInlineChildren = (
+      parentNode: any,
+      parentStyles: Record<string, string>,
+      parentYoga: Node,
+      parentCustom: CustomNode,
+      chain: Array<{ tagName: string, classes: string[], id?: string }>
+    ): boolean => {
+      // Extract segments from each child of the parent container (not the parent itself,
+      // since <p>/<h1>/etc. are not in FLATTENABLE_INLINE).
+      const segments: ColorSegment[] = []
+      if (parentNode.childNodes) {
+        for (const child of parentNode.childNodes) {
+          segments.push(...extractInlineSegments(child, parentStyles, chain))
+        }
+      }
+      // Trim leading/trailing whitespace from the combined text
+      if (segments.length > 0) {
+        segments[0] = { ...segments[0]!, text: segments[0]!.text.replace(/^\s+/, '') }
+        segments[segments.length - 1] = { ...segments[segments.length - 1]!, text: segments[segments.length - 1]!.text.replace(/\s+$/, '') }
+      }
+      const cleaned = segments.filter(s => s.text.length > 0)
+      const combinedText = cleaned.map(s => s.text).join('')
+      if (!combinedText) return false
+
+      const fontSize = parseInt(parentStyles['font-size'] || '14', 10)
+      const fontPath = LayoutEngine.resolveFontPath(parentStyles)
+      const lineHeightRaw = parentStyles['line-height']
+      let lhMul = 0
+      if (lineHeightRaw) {
+        const p = parseFloat(lineHeightRaw)
+        if (!isNaN(p)) lhMul = lineHeightRaw.endsWith('px') ? p / fontSize : p
+      }
+
+      const textYoga = Yoga.Node.create()
+      textYoga.setMeasureFunc((width, widthMode) => {
+        const textWidth = textMeasurer.measureWidth(combinedText, fontSize, fontPath)
+        const oneLineH = textMeasurer.measureHeight(fontSize, lhMul)
+        let avail: number
+        if (widthMode === Yoga.MEASURE_MODE_EXACTLY) avail = width
+        else if (widthMode === Yoga.MEASURE_MODE_AT_MOST) avail = width
+        else avail = textWidth
+        if (avail <= 0) return { width: textWidth, height: oneLineH }
+        const lines = textMeasurer.countLines(combinedText, fontSize, avail, fontPath)
+        const ta = parentStyles['text-align'] || 'left'
+        const full = ta === 'right' || ta === 'center' || ta === 'justify'
+        let rw: number
+        if (widthMode === Yoga.MEASURE_MODE_AT_MOST) rw = full ? width : Math.min(textWidth, width)
+        else if (widthMode === Yoga.MEASURE_MODE_EXACTLY) rw = width
+        else rw = textWidth
+        return { width: rw, height: oneLineH * lines }
+      })
+      textYoga.setWidthPercent(100)
+
+      const textStyles: Record<string, string> = {}
+      for (const k of ['font-family', 'font-size', 'font-weight', 'font-style', 'color', 'text-align', 'line-height', 'border-collapse']) {
+        if (parentStyles[k]) textStyles[k] = parentStyles[k]
+      }
+
+      parentYoga.insertChild(textYoga, parentYoga.getChildCount())
+      parentCustom.children.push({
+        yogaNode: textYoga,
+        data: { type: 'text', content: combinedText, styles: textStyles, colorSegments: cleaned },
+        children: []
+      })
+      return true
     }
 
     const traverse = (node: any, parentCustomNode: CustomNode, inheritedStyles: Record<string, string>, parentIsRow: boolean = false, ancestorChain: Array<{ tagName: string, classes: string[], id?: string }> = [], tableRowCounter?: { count: number }, tableInfo?: TableColumnInfo, elementIndex?: number, siblingCount?: number) => {
@@ -454,9 +608,17 @@ export class LayoutEngine {
           currentStyles['margin-bottom'] = currentStyles['margin-bottom'] || '10px'
           currentStyles['list-style-type'] = tagName === 'ul' ? 'disc' : 'decimal'
         } else if (tagName === 'li') {
+          // Detect if this <li> contains block-level children (nested lists, etc.)
+          const BLOCK_TAGS = ['ul', 'ol', 'div', 'p', 'table', 'blockquote', 'pre', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6']
+          const hasBlockChild = node.childNodes?.some((c: any) => BLOCK_TAGS.includes(c.nodeName))
           currentStyles['display'] = currentStyles['display'] || 'flex'
-          currentStyles['flex-direction'] = currentStyles['flex-direction'] || 'row'
-          currentStyles['flex-wrap'] = currentStyles['flex-wrap'] || 'wrap'
+          if (hasBlockChild) {
+            // Column layout so inline text sits above nested blocks
+            currentStyles['flex-direction'] = currentStyles['flex-direction'] || 'column'
+          } else {
+            currentStyles['flex-direction'] = currentStyles['flex-direction'] || 'row'
+            currentStyles['flex-wrap'] = currentStyles['flex-wrap'] || 'wrap'
+          }
           currentStyles['margin-bottom'] = currentStyles['margin-bottom'] || '5px'
         } else if (tagName === 'strong' || tagName === 'b') {
           currentStyles['font-weight'] = currentStyles['font-weight'] || 'bold'
@@ -652,7 +814,135 @@ export class LayoutEngine {
             const hasBr = node.childNodes.some((c: any) => c.nodeName === 'br')
             const isInlineContainer = ['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'].includes(tagName)
 
-            if (hasBr && isInlineContainer) {
+            // Detect <li> with block-level children (nested lists)
+            const INLINE_NODE_NAMES = new Set(['#text', 'strong', 'b', 'em', 'i', 'span', 'a', 'code', 'br', 'img', 'label', 'input', 's', 'del', 'sub', 'sup', 'mark', 'small', 'abbr', 'time', 'u'])
+            const isLiWithBlocks = tagName === 'li' && currentStyles['flex-direction'] === 'column'
+              && node.childNodes?.some((c: any) => !INLINE_NODE_NAMES.has(c.nodeName))
+
+            // ── Inline flattening: merge strong/em/code into a single text node ──
+            const shouldFlatten = (['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'li'].includes(tagName))
+              && !isLiWithBlocks
+              && canFlattenInline(node)
+              && hasStyledInlineChild(node)
+
+            if (shouldFlatten) {
+              // Override to column for a single flattened text child
+              blockYogaNode.setFlexDirection(Yoga.FLEX_DIRECTION_COLUMN)
+              flattenInlineChildren(node, currentStyles, blockYogaNode, customNode, childAncestorChain)
+            } else if (isLiWithBlocks) {
+              // Group consecutive inline children into row wrappers;
+              // block children (ul, ol, …) become direct column children.
+              interface ChildGroup {
+                type: 'inline' | 'block'
+                children: any[]
+              }
+              const groups: ChildGroup[] = []
+              let currentInline: any[] = []
+              for (const child of node.childNodes) {
+                if (INLINE_NODE_NAMES.has(child.nodeName)) {
+                  currentInline.push(child)
+                } else {
+                  if (currentInline.length > 0) {
+                    groups.push({ type: 'inline', children: currentInline })
+                    currentInline = []
+                  }
+                  groups.push({ type: 'block', children: [child] })
+                }
+              }
+              if (currentInline.length > 0) {
+                groups.push({ type: 'inline', children: currentInline })
+              }
+
+              let elIdx = 0
+              let liIdx = 1
+              for (const group of groups) {
+                if (group.type === 'inline') {
+                  // Skip groups that are only whitespace text
+                  const hasContent = group.children.some((c: any) =>
+                    c.nodeName !== '#text' || (c.value && c.value.trim())
+                  )
+                  if (!hasContent) continue
+
+                  // Try to flatten styled inline groups into a single text node
+                  const groupHasStyled = group.children.some((c: any) => STYLED_INLINE.has(c.nodeName))
+                  if (groupHasStyled) {
+                    // Create a virtual wrapper node to extract segments from
+                    const virtualNode = { childNodes: group.children }
+                    const allInline = group.children.every((c: any) => {
+                      if (c.nodeName === '#text' || c.nodeName === '#comment') return true
+                      return FLATTENABLE_INLINE.has(c.nodeName) && canFlattenInline(c)
+                    })
+                    if (allInline) {
+                      const textYoga = Yoga.Node.create()
+                      // Extract segments
+                      const gSegments: ColorSegment[] = []
+                      for (const c of group.children) {
+                        gSegments.push(...extractInlineSegments(c, currentStyles, childAncestorChain))
+                      }
+                      if (gSegments.length > 0) {
+                        gSegments[0] = { ...gSegments[0]!, text: gSegments[0]!.text.replace(/^\s+/, '') }
+                        gSegments[gSegments.length - 1] = { ...gSegments[gSegments.length - 1]!, text: gSegments[gSegments.length - 1]!.text.replace(/\s+$/, '') }
+                      }
+                      const cleaned = gSegments.filter(s => s.text.length > 0)
+                      const combined = cleaned.map(s => s.text).join('')
+                      if (combined) {
+                        const fontSize = parseInt(currentStyles['font-size'] || '14', 10)
+                        const fontPath = LayoutEngine.resolveFontPath(currentStyles)
+                        const lhRaw = currentStyles['line-height']
+                        let lhM = 0
+                        if (lhRaw) { const p = parseFloat(lhRaw); if (!isNaN(p)) lhM = lhRaw.endsWith('px') ? p / fontSize : p }
+                        textYoga.setMeasureFunc((width, widthMode) => {
+                          const tw = textMeasurer.measureWidth(combined, fontSize, fontPath)
+                          const oh = textMeasurer.measureHeight(fontSize, lhM)
+                          let av: number
+                          if (widthMode === Yoga.MEASURE_MODE_EXACTLY) av = width
+                          else if (widthMode === Yoga.MEASURE_MODE_AT_MOST) av = width
+                          else av = tw
+                          if (av <= 0) return { width: tw, height: oh }
+                          const lns = textMeasurer.countLines(combined, fontSize, av, fontPath)
+                          return { width: widthMode === Yoga.MEASURE_MODE_AT_MOST ? Math.min(tw, width) : (widthMode === Yoga.MEASURE_MODE_EXACTLY ? width : tw), height: oh * lns }
+                        })
+                        textYoga.setWidthPercent(100)
+                        const tStyles: Record<string, string> = {}
+                        for (const k of ['font-family', 'font-size', 'font-weight', 'font-style', 'color', 'text-align', 'line-height']) {
+                          if (currentStyles[k]) tStyles[k] = currentStyles[k]
+                        }
+                        blockYogaNode.insertChild(textYoga, blockYogaNode.getChildCount())
+                        customNode.children.push({
+                          yogaNode: textYoga,
+                          data: { type: 'text', content: combined, styles: tStyles, colorSegments: cleaned },
+                          children: []
+                        })
+                        continue
+                      }
+                    }
+                  }
+
+                  // Fallback: normal row wrapper
+                  const rowYoga = Yoga.Node.create()
+                  rowYoga.setDisplay(Yoga.DISPLAY_FLEX)
+                  rowYoga.setFlexDirection(Yoga.FLEX_DIRECTION_ROW)
+                  rowYoga.setFlexWrap(Yoga.WRAP_WRAP)
+                  blockYogaNode.insertChild(rowYoga, blockYogaNode.getChildCount())
+                  const rowCustom: CustomNode = {
+                    yogaNode: rowYoga,
+                    data: { type: 'block', tagName: '__line__', attrs: {}, styles: { ...currentStyles, display: 'flex', 'flex-direction': 'row', 'flex-wrap': 'wrap' } },
+                    children: []
+                  }
+                  customNode.children.push(rowCustom)
+                  for (const child of group.children) {
+                    const childElIdx = (child.nodeName && !child.nodeName.startsWith('#')) ? elIdx++ : undefined
+                    traverse(child, rowCustom, currentStyles, true, childAncestorChain, tableRowCounter, tableInfo, childElIdx, totalElementChildren)
+                  }
+                } else {
+                  for (const child of group.children) {
+                    if (child.nodeName === 'li') child._listIndex = liIdx++
+                    const childElIdx = (child.nodeName && !child.nodeName.startsWith('#')) ? elIdx++ : undefined
+                    traverse(child, customNode, currentStyles, false, childAncestorChain, tableRowCounter, tableInfo, childElIdx, totalElementChildren)
+                  }
+                }
+              }
+            } else if (hasBr && isInlineContainer) {
               // Group children into lines split by <br>, create a row node for each line
               const lines: any[][] = [[]]
               for (const child of node.childNodes) {

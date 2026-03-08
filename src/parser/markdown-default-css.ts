@@ -80,9 +80,6 @@ blockquote {
 code {
   font-family: 'IBM Plex Mono', 'Cascadia Code', 'Fira Code', monospace;
   font-size: 12px;
-  background-color: #f0f3f7;
-  padding: 2px 6px;
-  border-radius: 4px;
   color: #c7254e;
 }
 
