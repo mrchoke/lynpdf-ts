@@ -1,6 +1,6 @@
 {
   "name": "lynpdf",
-  "version": "2.1.1",
+  "version": "2.1.2",
   "description": "LynPDF Creator — Convert HTML/CSS to PDF with Thai language support, color emoji, and flexbox layout",
   "module": "./dist/index.js",
   "main": "dist/index.js",
